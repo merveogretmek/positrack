@@ -37,6 +37,19 @@ extension Color {
 
 @main
 struct MyHabitTrackerApp: App {
+    
+    init() {
+            // Set unselected tab icon color to white
+            UITabBar.appearance().unselectedItemTintColor = UIColor.white
+            // Optionally, set the tab bar background to match your app's background color
+            UITabBar.appearance().barTintColor = UIColor(
+                red: 49/255,
+                green: 54/255,
+                blue: 63/255,
+                alpha: 1.0
+            )
+        }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -50,126 +63,198 @@ struct ContentView: View {
             // MARK: - Habits
             HabitsView()
                 .tabItem {
-                    Image(systemName: "square.grid.2x2")
+                    Image(systemName: "brain.fill")
                     Text("Habits")
                 }
             
             // MARK: - Tasks
-            Text("Tasks")
+            TasksView()
                 .tabItem {
-                    Image(systemName: "checkmark.circle")
+                    Image(systemName: "list.bullet.clipboard.fill")
                     Text("Tasks")
                 }
             
             // MARK: - Focus
-            Text("Focus")
+            FocusView()
                 .tabItem {
                     Image(systemName: "eye")
                     Text("Focus")
                 }
             
             // MARK: - Mood
-            Text("Mood")
+            MoodView()
                 .tabItem {
-                    Image(systemName: "smiley")
+                    Image(systemName: "heart.circle.fill")
                     Text("Mood")
                 }
             
             // MARK: - Settings
-            Text("Settings")
+            SettingsView()
                 .tabItem {
-                    Image(systemName: "gear")
+                    Image(systemName: "gearshape")
                     Text("Settings")
                 }
         }
+        .accentColor(Color(hex: "836FFF"))
     }
 }
 
 // MARK: - Habits View
 struct HabitsView: View {
-    // The date that is currently selected.
     @State private var selectedDate: Date = Date()
-
-    // A placeholder array to demonstrate habit listings.
     @State private var habits: [String] = []
-
+    
     var body: some View {
         NavigationView {
-            VStack {
-                // Display the top selected date (e.g., "March 3").
-                Text(Formatter.displayDate.string(from: selectedDate))
-                    .font(.title)
-                    .padding(.top)
-
-                // Horizontal scroll of dates.
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
-                        // Generate the dates for a 7-day range around the selected date.
-                        ForEach(getWeekDates(for: selectedDate), id: \.self) { date in
-                            VStack(spacing: 4) {
-                                // Day of month in a circle if selected.
-                                Text(Formatter.dayOfMonth.string(from: date))
-                                    .frame(width: 40, height: 40)
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(isSameDay(date, selectedDate) ? .white : .primary)
-                                    .background(
-                                        Circle()
-                                            .fill(isSameDay(date, selectedDate) ? Color.blue : Color.clear)
-                                    )
-
-                                // Day of the week abbreviation (Mon, Tue, etc.)
-                                Text(Formatter.dayOfWeek.string(from: date))
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                            .onTapGesture {
-                                // Update the selected date
-                                selectedDate = date
+            ZStack {
+                Color(hex: "31363F")
+                    .ignoresSafeArea()
+                VStack {
+                    // Display the top selected date (e.g., "March 3")
+                    Text(Formatter.displayDate.string(from: selectedDate))
+                        .font(.custom("Varela Round", size: 34))
+                        .padding(.top)
+                        .foregroundColor(.white)
+                    
+                    // Horizontal scroll of dates.
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(getWeekDates(for: selectedDate), id: \.self) { date in
+                                VStack(spacing: 4) {
+                                    Text(Formatter.dayOfMonth.string(from: date))
+                                        .frame(width: 40, height: 40)
+                                        .font(.custom("Varela Round", size: 18))
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(isSameDay(date, selectedDate) ? .white : .primary)
+                                        .background(
+                                            Circle()
+                                                .fill(isSameDay(date, selectedDate) ? Color(hex: "836FFF") : Color.clear)
+                                        )
+                                    
+                                    Text(Formatter.dayOfWeek.string(from: date))
+                                        .font(.custom("Varela Round", size: 16))
+                                        .foregroundColor(.gray)
+                                }
+                                .onTapGesture {
+                                    selectedDate = date
+                                }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal)
                     }
-                    // This modifier makes the HStack expand to the available width and centers its content.
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
+                    
+                    // Display habits if available or a placeholder message.
+                    if habits.isEmpty {
+                        Spacer()
+                        Text("You don't have any habits yet.")
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        Spacer()
+                    } else {
+                        List(habits, id: \.self) { habit in
+                            Text(habit)
+                        }
+                    }
+                    
+                    // Button to add a new habit
+                    Button(action: {
+                        // Handle creating a new habit
+                    }) {
+                        Text("Add a new habit")
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color(hex:"836FFF"))
+                            .cornerRadius(8)
+                    }
                     .padding(.horizontal)
+                    .padding(.bottom)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 16)
-
-                // If there are habits, display them. Otherwise, show a placeholder message.
-                if habits.isEmpty {
-                    Spacer()
-                    Text("You don't have any habits yet.\nTap \"Add a new habit\" to add your first habit.")
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                    Spacer()
-                } else {
-                    // Display habits in a List or other custom layout
-                    List(habits, id: \.self) { habit in
-                        Text(habit)
-                    }
-                }
-
-                // Button to add a new habit
-                Button(action: {
-                    // Handle creating a new habit
-                }) {
-                    Text("Add a new habit")
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(8)
-                }
-                .padding(.horizontal)
-                .padding(.bottom)
             }
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
         }
     }
+    
+    // MARK: - Utility Methods
+    
+    func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
+        Calendar.current.isDate(date1, inSameDayAs: date2)
+    }
+    
+    func getWeekDates(for referenceDate: Date) -> [Date] {
+        let calendar = Calendar.current
+        let offsets = -3...3
+        return offsets.compactMap {
+            calendar.date(byAdding: .day, value: $0, to: referenceDate)
+        }
+    }
+}
 
+// MARK: - Tasks View Placeholder
+struct TasksView: View {
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(hex: "31363F")
+                    .ignoresSafeArea()
+                Text("Tasks Placeholder")
+                    .foregroundColor(.white)
+                    .navigationTitle("Tasks")
+            }
+        }
+    }
+}
+
+// MARK: - Focus View Placeholder
+struct FocusView: View {
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(hex: "31363F")
+                    .ignoresSafeArea()
+                Text("Focus Placeholder")
+                    .foregroundColor(.white)
+                    .navigationTitle("Focus")
+            }
+        }
+    }
+}
+
+// MARK: - Mood View Placeholder
+struct MoodView: View {
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(hex: "31363F")
+                    .ignoresSafeArea()
+                Text("Mood Placeholder")
+                    .foregroundColor(.white)
+                    .navigationTitle("Mood")
+            }
+        }
+    }
+}
+
+// MARK: - Settings View Placeholder
+struct SettingsView: View {
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(hex: "31363F")
+                    .ignoresSafeArea()
+                Text("Settings Placeholder")
+                    .foregroundColor(.white)
+                    .navigationTitle("Settings")
+            }
+        }
+    }
+}
+    
     // MARK: - Utility Methods
 
     /// Check if two Date objects fall on the same calendar day.
@@ -186,7 +271,6 @@ struct HabitsView: View {
             calendar.date(byAdding: .day, value: $0, to: referenceDate)
         }
     }
-}
 
 // MARK: - Date Formatters
 struct Formatter {
