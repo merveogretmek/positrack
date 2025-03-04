@@ -71,6 +71,28 @@ class TaskStore: ObservableObject {
     @Published var tasks: [Task] = []
 }
 
+enum FocusPreset: String, CaseIterable, Identifiable {
+    case pomodoro = "Pomodoro (25 min)"
+    case shortFocus = "Short Focus (15 min)"
+    case longFocus = "Long Focus (50 min)"
+    case custom = "Custom"
+    
+    var id: String { rawValue }
+    
+    var duration: TimeInterval {
+        switch self {
+        case .pomodoro:
+            return 25 * 60
+        case .shortFocus:
+            return 15 * 60
+        case .longFocus:
+            return 50 * 60
+        case .custom:
+            return 25 * 60
+        }
+    }
+}
+
 // MARK: - Main App
 
 @main
@@ -93,6 +115,19 @@ struct MyHabitTrackerApp: App {
             blue: 63/255,
             alpha: 1.0
         )
+        
+        let navBarAppearance = UINavigationBarAppearance()
+                    navBarAppearance.configureWithOpaqueBackground()
+                    navBarAppearance.backgroundColor = UIColor(Color(hex: "31363F"))
+                    navBarAppearance.titleTextAttributes = [
+                        .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+                    ]
+                    navBarAppearance.largeTitleTextAttributes = [
+                        .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+                    ]
+                    
+                    UINavigationBar.appearance().standardAppearance = navBarAppearance
+                    UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
     }
     
     var body: some Scene {
@@ -450,9 +485,10 @@ struct TaskRow: View {
                     .strikethrough(task.isCompleted, color: Color(hex: "EEEEEE"))
                     .foregroundColor(Color(hex: "EEEEEE"))
                 if let dueDate = task.dueDate {
+                    let isOverdue = dueDate < Date() && !task.isCompleted
                     Text("Due: \(dueDate, formatter: taskDateFormatter)")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "EEEEEE"))
+                        .foregroundColor(isOverdue ? .red: Color(hex: "EEEEEE"))
                 }
             }
             Spacer()
@@ -560,15 +596,242 @@ struct NewTaskView: View {
 // MARK: - Focus View
 
 struct FocusView: View {
+    // Timer state variables
+    @State private var selectedPreset: FocusPreset = .pomodoro
+    @State private var duration: TimeInterval = FocusPreset.pomodoro.duration
+    @State private var remainingTime: TimeInterval = FocusPreset.pomodoro.duration
+    @State private var isRunning: Bool = false
+    @State private var timer: Timer? = nil
+    
+    // Other state variables
+    @State private var showSettings: Bool = false
+    @State private var selectedActivity: String = "General Focus"
+    @State private var backgroundNoiseOn: Bool = false
+    @State private var dndOn: Bool = false
+    @State private var sessionEndedAlert: Bool = false
+    
     var body: some View {
         NavigationView {
-            ZStack {
-                Color(hex: "31363F")
-                    .ignoresSafeArea()
-                Text("Focus Placeholder")
-                    .foregroundColor(.white)
-                    .navigationTitle("Focus")
+            VStack(spacing: 20) {
+                // MARK: Header / Title Area
+                HStack {
+                    Text("Focus")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(hex: "EEEEEE"))
+                    Spacer()
+                    Button(action: { showSettings = true }) {
+                        Image(systemName: "gearshape")
+                            .font(.title)
+                            .foregroundColor(Color(hex: "836FFF"))
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top)
+                
+                Spacer()
+                
+                // MARK: Current Focus Session Panel - Timer Display
+                ZStack {
+                    // Background circle for progress track
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 20)
+                        .frame(width: 200, height: 200)
+                    
+                    // Dynamic circular progress based on remaining time
+                    Circle()
+                        .trim(from: 0, to: CGFloat(remainingTime / duration))
+                        .stroke(
+                            gradientForTimer(),
+                            style: StrokeStyle(lineWidth: 20, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 200, height: 200)
+                        .animation(.linear, value: remainingTime)
+                    
+                    // Timer text display
+                    Text(timeString(time: remainingTime))
+                        .font(.system(size: 48, weight: .bold, design: .monospaced))
+                        .foregroundColor(Color(hex: "EEEEEE"))
+                }
+                
+                // Activity label below timer
+                Text(selectedActivity)
+                    .font(.title2)
+                    .foregroundColor(Color(hex: "EEEEEE"))
+                
+                // MARK: Controls: Start / Pause / Stop Buttons
+                HStack(spacing: 40) {
+                    if !isRunning && remainingTime < duration {
+                        // When paused, allow resume
+                        Button(action: startTimer) {
+                            Label("Resume", systemImage: "play.fill")
+                        }
+                    } else if !isRunning {
+                        Button(action: startTimer) {
+                            Label("Start", systemImage: "play.fill")
+                        }
+                    } else {
+                        Button(action: pauseTimer) {
+                            Label("Pause", systemImage: "pause.fill")
+                        }
+                    }
+                    Button(action: stopTimer) {
+                        Label("Stop", systemImage: "stop.fill")
+                    }
+                }
+                .font(.title2)
+                .foregroundColor(Color(hex: "836FFF"))
+                
+                // MARK: Session Type Selector (Preset Picker)
+                Picker("Session Type", selection: $selectedPreset) {
+                    ForEach(FocusPreset.allCases) { preset in
+                        Text(preset.rawValue).tag(preset)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
+                .onChange(of: selectedPreset) { newValue in
+                    duration = newValue.duration
+                    remainingTime = newValue.duration
+                    if isRunning { stopTimer() }
+                }
+                
+                // MARK: Session Options: Toggles for Background Noise and DND
+                HStack(spacing: 40) {
+                    Toggle(isOn: $backgroundNoiseOn) {
+                        Image(systemName: "speaker.wave.2.fill")
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                    
+                    Toggle(isOn: $dndOn) {
+                        Image(systemName: "moon.zzz.fill")
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                }
+                .font(.title)
+                .padding(.horizontal)
+                
+                Spacer()
             }
+            .background(Color(hex: "31363F").ignoresSafeArea())
+            .navigationBarHidden(true)
+            .sheet(isPresented: $showSettings) {
+                FocusSettingsView()
+            }
+            .alert(isPresented: $sessionEndedAlert) {
+                Alert(
+                    title: Text("Focus Session Complete"),
+                    message: Text("Great job! You focused for \(timeString(time: duration))."),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
+    }
+    
+    // MARK: Timer Methods
+    
+    func startTimer() {
+        // If timer has finished previously, reset the remaining time
+        if remainingTime <= 0 {
+            remainingTime = duration
+        }
+        isRunning = true
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if remainingTime > 0 {
+                remainingTime -= 1
+            } else {
+                timer?.invalidate()
+                isRunning = false
+                sessionEndedAlert = true
+                // Optionally: Log session details here
+            }
+        }
+    }
+    
+    func pauseTimer() {
+        isRunning = false
+        timer?.invalidate()
+    }
+    
+    func stopTimer() {
+        isRunning = false
+        timer?.invalidate()
+        remainingTime = duration
+        // Optionally: Prompt confirmation or log session data
+    }
+    
+    // MARK: Utility Methods
+    
+    func timeString(time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
+    func gradientForTimer() -> AngularGradient {
+        // Adjust colors dynamically based on progress: green → yellow → red
+        let progress = remainingTime / duration
+        let colors: [Color]
+        if progress > 0.5 {
+            colors = [Color(hex: "9B59B6"), Color(hex: "836FFF")]
+        } else {
+            colors = [Color(hex: "836FFF"), Color(hex: "8E44AD")]
+        }
+        return AngularGradient(gradient: Gradient(colors: colors), center: .center)
+    }
+}
+
+// MARK: - FocusSettingsView (Stub)
+
+struct FocusSettingsView: View {
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Session Lengths")) {
+                    HStack {
+                        Text("Pomodoro:")
+                        Spacer()
+                        Text("25 min")
+                    }
+                    HStack {
+                        Text("Short Focus:")
+                        Spacer()
+                        Text("15 min")
+                    }
+                    HStack {
+                        Text("Long Focus:")
+                        Spacer()
+                        Text("50 min")
+                    }
+                }
+                
+                Section(header: Text("Break Durations")) {
+                    HStack {
+                        Text("Short Break:")
+                        Spacer()
+                        Text("5 min")
+                    }
+                    HStack {
+                        Text("Long Break:")
+                        Spacer()
+                        Text("15 min")
+                    }
+                }
+                
+                Section(header: Text("Audio & Notifications")) {
+                    Toggle("Enable Background Sound", isOn: .constant(true))
+                    Toggle("Silence Notifications", isOn: .constant(false))
+                }
+            }
+            .navigationBarTitle("Focus Settings", displayMode: .inline)
+            .navigationBarItems(
+                leading: Button("Cancel") { presentationMode.wrappedValue.dismiss() },
+                trailing: Button("Done") { presentationMode.wrappedValue.dismiss() }
+            )
         }
     }
 }
