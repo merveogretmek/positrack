@@ -36,7 +36,7 @@ extension Color {
     }
 }
 
-// MARK: - Model and Data Source
+// MARK: - Habit Model and Data Source
 
 struct Habit: Identifiable {
     let id = UUID()
@@ -48,11 +48,35 @@ class HabitStore: ObservableObject {
     @Published var habits: [Habit] = []
 }
 
+// MARK: - Task Model and Data Source
+
+enum TaskPriority: String, CaseIterable, Identifiable {
+    case high = "High"
+    case medium = "Medium"
+    case low = "Low"
+    
+    var id: String { rawValue }
+}
+
+struct Task: Identifiable {
+    let id = UUID()
+    var title: String
+    var description: String = ""
+    var dueDate: Date? = nil
+    var priority: TaskPriority = .medium
+    var isCompleted: Bool = false
+}
+
+class TaskStore: ObservableObject {
+    @Published var tasks: [Task] = []
+}
+
 // MARK: - Main App
 
 @main
 struct MyHabitTrackerApp: App {
     @StateObject private var habitStore = HabitStore()
+    @StateObject private var taskStore = TaskStore()
     
     init() {
         // Set unselected tab icon color to EEEEEE (hex)
@@ -75,6 +99,7 @@ struct MyHabitTrackerApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(habitStore)
+                .environmentObject(taskStore)
         }
     }
 }
@@ -84,35 +109,31 @@ struct MyHabitTrackerApp: App {
 struct ContentView: View {
     var body: some View {
         TabView {
-            // MARK: - Habits
+            // Habits tab
             HabitsView()
                 .tabItem {
                     Image(systemName: "brain.fill")
                     Text("Habits")
                 }
-            
-            // MARK: - Tasks
+            // Tasks tab
             TasksView()
                 .tabItem {
                     Image(systemName: "list.bullet.clipboard.fill")
                     Text("Tasks")
                 }
-            
-            // MARK: - Focus
+            // Focus tab
             FocusView()
                 .tabItem {
                     Image(systemName: "eye")
                     Text("Focus")
                 }
-            
-            // MARK: - Mood
+            // Mood tab
             MoodView()
                 .tabItem {
                     Image(systemName: "heart.circle.fill")
                     Text("Mood")
                 }
-            
-            // MARK: - Settings
+            // Settings tab
             SettingsView()
                 .tabItem {
                     Image(systemName: "gearshape")
@@ -133,7 +154,6 @@ struct HabitsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Dark background
                 Color(hex: "31363F")
                     .ignoresSafeArea()
                 
@@ -194,7 +214,6 @@ struct HabitsView: View {
                         List {
                             ForEach(habitStore.habits) { habit in
                                 ZStack(alignment: .leading) {
-                                    // 1) Rounded rectangle as the background of each row
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(Color(hex: "EEEEEE"))
                                     Text(habit.name)
@@ -248,7 +267,6 @@ struct HabitsView: View {
     }
 }
 
-
 // MARK: - New Habit View
 
 struct NewHabitView: View {
@@ -264,18 +282,13 @@ struct NewHabitView: View {
     var body: some View {
         NavigationView {
             Form {
-                // Habit Name Field
                 Section(header: Text("Habit Name")) {
                     TextField("e.g., Drink 8 glasses of water", text: $habitName)
                 }
-                
-                // Goal/Target Definition
                 Section(header: Text("Goal (Optional)")) {
                     TextField("Enter your daily goal", text: $goal)
                         .keyboardType(.numberPad)
                 }
-                
-                // Frequency Selection
                 Section(header: Text("Frequency")) {
                     Picker("Frequency", selection: $frequencySelection) {
                         Text("Daily").tag(0)
@@ -284,18 +297,12 @@ struct NewHabitView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
-                
-                // Schedule/Time Preferences
                 Section(header: Text("Schedule")) {
                     DatePicker("Select Time", selection: $timePreference, displayedComponents: .hourAndMinute)
                 }
-                
-                // Reminders/Notifications
                 Section(header: Text("Reminders")) {
                     Toggle("Enable Reminders", isOn: $remindersOn)
                 }
-                
-                // Error Message (if any)
                 if !errorMessage.isEmpty {
                     Section {
                         Text(errorMessage)
@@ -322,21 +329,235 @@ struct NewHabitView: View {
     }
 }
 
-// MARK: - Other Views Placeholders
+// MARK: - Tasks View
 
 struct TasksView: View {
+    @EnvironmentObject var taskStore: TaskStore
+    @State private var showingNewTask = false
+    @State private var selectedFilter = "All"
+    
+    let filters = ["All", "Today", "Overdue", "Completed"]
+    
+    var filteredTasks: [Task] {
+        switch selectedFilter {
+        case "Today":
+            let today = Calendar.current.startOfDay(for: Date())
+            return taskStore.tasks.filter {
+                guard let due = $0.dueDate else { return false }
+                return Calendar.current.isDate(due, inSameDayAs: today)
+            }
+        case "Overdue":
+            return taskStore.tasks.filter {
+                if let due = $0.dueDate {
+                    return due < Date() && !$0.isCompleted
+                }
+                return false
+            }
+        case "Completed":
+            return taskStore.tasks.filter { $0.isCompleted }
+        default:
+            return taskStore.tasks
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F")
-                    .ignoresSafeArea()
-                Text("Tasks Placeholder")
-                    .foregroundColor(.white)
-                    .navigationTitle("Tasks")
+                Color(hex: "31363F").ignoresSafeArea()
+                VStack {
+                    // Filter Bar
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(filters, id: \.self) { filter in
+                                Text(filter)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(selectedFilter == filter ? Color(hex: "836FFF") : Color.clear)
+                                    .foregroundColor(selectedFilter == filter ? Color(hex: "EEEEEE") : .gray)
+                                    .cornerRadius(20)
+                                    .onTapGesture {
+                                        selectedFilter = filter
+                                    }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.top)
+                    
+                    // Task List
+                    if filteredTasks.isEmpty {
+                        Spacer()
+                        Text("No tasks available.")
+                            .foregroundColor(.gray)
+                        Spacer()
+                    } else {
+                        List {
+                            ForEach(filteredTasks) { task in
+                                TaskRow(task: task)
+                                    .listRowBackground(Color(hex: "31363F"))
+                                    .onTapGesture {
+                                        // Optionally open task details here.
+                                    }
+                            }
+                            .onDelete(perform: deleteTask)
+                        }
+                        .listStyle(PlainListStyle())
+                        .background(Color(hex: "31363F"))
+                        .scrollContentBackground(.hidden)
+                    }
+                }
+                .navigationTitle("Tasks")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            showingNewTask = true
+                        }) {
+                            Image(systemName: "plus")
+                                .foregroundColor(Color(hex: "836FFF"))
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingNewTask) {
+                    NewTaskView()
+                        .environmentObject(taskStore)
+                }
             }
         }
     }
+    
+    func deleteTask(at offsets: IndexSet) {
+        taskStore.tasks.remove(atOffsets: offsets)
+    }
 }
+
+// MARK: - Task Row
+
+struct TaskRow: View {
+    @EnvironmentObject var taskStore: TaskStore
+    var task: Task
+    
+    var body: some View {
+        HStack {
+            Button(action: {
+                toggleCompletion()
+            }) {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(task.isCompleted ? .green : .gray)
+            }
+            VStack(alignment: .leading) {
+                Text(task.title)
+                    .fontWeight(task.isCompleted ? .light : .bold)
+                    .strikethrough(task.isCompleted, color: Color(hex: "EEEEEE"))
+                    .foregroundColor(Color(hex: "EEEEEE"))
+                if let dueDate = task.dueDate {
+                    Text("Due: \(dueDate, formatter: taskDateFormatter)")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "EEEEEE"))
+                }
+            }
+            Spacer()
+            Text(task.priority.rawValue)
+                .font(.caption)
+                .padding(4)
+                .background(priorityColor(task.priority))
+                .cornerRadius(4)
+                .foregroundColor(.white)
+        }
+        .padding(.vertical, 4)
+        .background(Color(hex: "31363F"))
+    }
+    
+    func toggleCompletion() {
+        if let index = taskStore.tasks.firstIndex(where: { $0.id == task.id }) {
+            taskStore.tasks[index].isCompleted.toggle()
+        }
+    }
+    
+    func priorityColor(_ priority: TaskPriority) -> Color {
+        switch priority {
+        case .high: return Color.red
+        case .medium: return Color.orange
+        case .low: return Color.blue
+        }
+    }
+}
+
+let taskDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    formatter.timeStyle = .short
+    return formatter
+}()
+
+// MARK: - New Task View
+
+struct NewTaskView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var taskStore: TaskStore
+    
+    @State private var title: String = ""
+    @State private var description: String = ""
+    @State private var dueDate: Date = Date()
+    @State private var setDueDate: Bool = false
+    @State private var selectedPriority: TaskPriority = .medium
+    @State private var errorMessage: String = ""
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Task Title")) {
+                    TextField("Enter task title", text: $title)
+                }
+                Section(header: Text("Description (Optional)")) {
+                    TextField("Enter description", text: $description)
+                }
+                Section {
+                    Toggle("Set Due Date", isOn: $setDueDate)
+                    if setDueDate {
+                        DatePicker("Due Date", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
+                    }
+                }
+                Section(header: Text("Priority")) {
+                    Picker("Priority", selection: $selectedPriority) {
+                        ForEach(TaskPriority.allCases) { priority in
+                            Text(priority.rawValue).tag(priority)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                if !errorMessage.isEmpty {
+                    Section {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .navigationTitle("New Task")
+            .navigationBarItems(leading: Button("Cancel") {
+                presentationMode.wrappedValue.dismiss()
+            }, trailing: Button("Save") {
+                saveTask()
+            })
+        }
+    }
+    
+    func saveTask() {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "Please enter a task title"
+            return
+        }
+        
+        var newTask = Task(title: title, description: description, priority: selectedPriority)
+        if setDueDate {
+            newTask.dueDate = dueDate
+        }
+        taskStore.tasks.append(newTask)
+        presentationMode.wrappedValue.dismiss()
+    }
+}
+
+// MARK: - Focus View
 
 struct FocusView: View {
     var body: some View {
@@ -352,6 +573,8 @@ struct FocusView: View {
     }
 }
 
+// MARK: - Mood View
+
 struct MoodView: View {
     var body: some View {
         NavigationView {
@@ -365,6 +588,8 @@ struct MoodView: View {
         }
     }
 }
+
+// MARK: - Settings View
 
 struct SettingsView: View {
     var body: some View {
@@ -409,6 +634,8 @@ struct Formatter {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView().environmentObject(HabitStore())
+        ContentView()
+            .environmentObject(HabitStore())
+            .environmentObject(TaskStore())
     }
 }
