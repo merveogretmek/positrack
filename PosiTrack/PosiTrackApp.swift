@@ -324,34 +324,79 @@ struct NewHabitView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Habit Name")) {
-                    TextField("e.g., Drink 8 glasses of water", text: $habitName)
-                }
-                Section(header: Text("Goal (Optional)")) {
-                    TextField("Enter your daily goal", text: $goal)
-                        .keyboardType(.numberPad)
-                }
-                Section(header: Text("Frequency")) {
-                    Picker("Frequency", selection: $frequencySelection) {
-                        Text("Daily").tag(0)
-                        Text("Weekly").tag(1)
-                        Text("Custom").tag(2)
+            ZStack {
+                // Set the overall background color
+                Color(hex: "31363F")
+                    .ignoresSafeArea()
+                
+                Form {
+                    Section(header:
+                        Text("Habit Name")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                    ) {
+                        CustomTextField(placeholder: "e.g., Drink 8 glasses of water", text: $habitName)
+                        
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-                Section(header: Text("Schedule")) {
-                    DatePicker("Select Time", selection: $timePreference, displayedComponents: .hourAndMinute)
-                }
-                Section(header: Text("Reminders")) {
-                    Toggle("Enable Reminders", isOn: $remindersOn)
-                }
-                if !errorMessage.isEmpty {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
+                    .listRowBackground(Color(hex: "222831"))
+                    
+                    Section(header:
+                        Text("Goal (Optional)")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                    ) {
+                        CustomTextField(placeholder: "Enter your daily goal", text: $goal)
+                    }
+                    .listRowBackground(Color(hex: "222831"))
+                    
+                    Section(header:
+                        Text("Frequency")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                    ) {
+                        Picker("Frequency", selection: $frequencySelection) {
+                            Text("Daily").tag(0)
+                            Text("Weekly").tag(1)
+                            Text("Custom").tag(2)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .onAppear {
+                            let purpleColor = UIColor(Color(hex: "836FFF"))
+                            UISegmentedControl.appearance().selectedSegmentTintColor = purpleColor
+                            UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Color(hex: "EEEEEE"))], for: .normal)
+                            UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Color(hex: "EEEEEE"))], for: .selected)
+                        }
+                    }
+                    .listRowBackground(Color(hex: "31363F"))
+                    
+                    Section(header: Text("Schedule")
+                                .foregroundColor(Color(hex: "EEEEEE"))
+                    ) {
+                        DatePicker(selection: $timePreference, displayedComponents: .hourAndMinute) {
+                            Text("Select Time")
+                                .foregroundColor(Color(hex: "EEEEEE"))
+                        }
+                        .environment(\.colorScheme, .dark)
+                    }
+                    .listRowBackground(Color(hex: "31363F"))
+                    
+                    Section(header:
+                        Text("Reminders")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                    ) {
+                        Toggle("Enable Reminders", isOn: $remindersOn)
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                    }
+                    .listRowBackground(Color(hex: "31363F"))
+                    
+                    if !errorMessage.isEmpty {
+                        Section {
+                            Text(errorMessage)
+                                .foregroundColor(.red)
+                        }
+                        .listRowBackground(Color(hex: "31363F"))
                     }
                 }
+                // Hide the default form background so our custom background shows
+                .scrollContentBackground(.hidden)
             }
             .navigationBarTitle("Add a New Habit", displayMode: .inline)
             .navigationBarItems(
@@ -371,6 +416,24 @@ struct NewHabitView: View {
         }
     }
 }
+
+struct CustomTextField: View {
+    var placeholder: String
+    @Binding var text: String
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .foregroundColor(Color(hex: "EEEEEE"))
+            }
+            TextField("", text: $text)
+                .foregroundColor(Color(hex: "EEEEEE"))
+        }
+    }
+}
+
+
 
 // MARK: - Tasks View
 
@@ -613,9 +676,9 @@ struct FocusView: View {
     @State private var isRunning: Bool = false
     @State private var timer: Timer? = nil
 
-    // Custom focus state
-    @State private var customDuration: TimeInterval = 25 * 60
-    @State private var showCustomFocusSheet: Bool = false
+    // Custom focus input state variables
+    @State private var showCustomInput: Bool = false
+    @State private var customMinutesInput: String = ""
 
     // Activity and sheet state variables
     @State private var selectedActivity: String = "General Focus"
@@ -633,16 +696,11 @@ struct FocusView: View {
             VStack(spacing: 20) {
                 // Header / Title Area
                 HStack {
-                    Text("Focus Timer")
+                    Text("Focus")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(Color(hex: "EEEEEE"))
                     Spacer()
-                    Button(action: { activeSheet = .settings }) {
-                        Image(systemName: "gearshape")
-                            .font(.title)
-                            .foregroundColor(Color(hex: "836FFF"))
-                    }
                 }
                 .padding(.horizontal)
                 .padding(.top)
@@ -711,17 +769,53 @@ struct FocusView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
+                .onAppear {
+                    let purpleColor = UIColor(Color(hex: "836FFF"))
+                    UISegmentedControl.appearance().selectedSegmentTintColor = purpleColor
+
+                    let textAttributes = [NSAttributedString.Key.foregroundColor: UIColor(Color(hex: "EEEEEE"))]
+                    UISegmentedControl.appearance().setTitleTextAttributes(textAttributes, for: .normal)
+                    UISegmentedControl.appearance().setTitleTextAttributes(textAttributes, for: .selected)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
                 .onChange(of: selectedPreset) { newValue in
                     if newValue == .custom {
-                        // Show the sheet for entering custom minutes
-                        showCustomFocusSheet = true
+                        // Show the small inline input for custom minutes.
+                        showCustomInput = true
+                        // Optionally, preset a default value.
+                        customMinutesInput = "25"
                     } else {
+                        showCustomInput = false
                         duration = newValue.duration
                         remainingTime = newValue.duration
                     }
                 }
 
-                // Session Options: Toggles
+                // Inline Custom Duration Input Pop-Up
+                if showCustomInput && selectedPreset == .custom {
+                    HStack(spacing: 8) {
+                        Text("Minutes:")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                        TextField("e.g., 30", text: $customMinutesInput)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 60)
+                        Button("Set") {
+                            if let minutes = Double(customMinutesInput), minutes > 0 {
+                                let customDuration = minutes * 60
+                                duration = customDuration
+                                remainingTime = customDuration
+                                // Hide the input pop-up once the custom duration is set.
+                                showCustomInput = false
+                            }
+                        }
+                        .foregroundColor(Color(hex: "836FFF"))
+                    }
+                    .padding(.horizontal)
+                }
+
+                // Session Options: Toggles for Background Noise and DND
                 HStack {
                     HStack(spacing: 8) {
                         Image(systemName: "speaker.wave.2.fill")
@@ -754,18 +848,10 @@ struct FocusView: View {
                 case .activityPicker:
                     ActivityPickerView { newActivity in
                         selectedActivity = newActivity
-                        activeSheet = nil
+                        activeSheet = nil  // Dismiss the sheet after selection
                     }
                     .environmentObject(habitStore)
                 }
-            }
-            // Present the custom focus sheet when needed.
-            .sheet(isPresented: $showCustomFocusSheet, onDismiss: {
-                // Update the timer to use the custom duration.
-                duration = customDuration
-                remainingTime = customDuration
-            }) {
-                CustomFocusDurationSheet(customDuration: $customDuration, isPresented: $showCustomFocusSheet)
             }
             .alert(isPresented: $sessionEndedAlert) {
                 Alert(
@@ -777,7 +863,8 @@ struct FocusView: View {
         }
     }
 
-    // Timer methods...
+    // MARK: Timer Methods
+
     func startTimer() {
         if remainingTime <= 0 {
             remainingTime = duration
@@ -806,7 +893,8 @@ struct FocusView: View {
         remainingTime = duration
     }
 
-    // Utility methods...
+    // MARK: Utility Methods
+
     func timeString(time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
@@ -821,6 +909,7 @@ struct FocusView: View {
         return AngularGradient(gradient: Gradient(colors: colors), center: .center)
     }
 }
+
 
 // MARK: - ActivityPickerView
 struct ActivityPickerView: View {
