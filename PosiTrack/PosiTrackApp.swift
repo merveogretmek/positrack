@@ -72,9 +72,9 @@ class TaskStore: ObservableObject {
 }
 
 enum FocusPreset: String, CaseIterable, Identifiable {
-    case pomodoro = "Pomodoro (25 min)"
-    case shortFocus = "Short Focus (15 min)"
-    case longFocus = "Long Focus (50 min)"
+    case pomodoro = "Pomodoro"
+    case shortFocus = "Short Focus"
+    case longFocus = "Long Focus"
     case custom = "Custom"
     
     var id: String { rawValue }
@@ -91,6 +91,14 @@ enum FocusPreset: String, CaseIterable, Identifiable {
             return 25 * 60
         }
     }
+}
+
+// MARK: - ActiveFocusSheet Enum
+enum ActiveFocusSheet: Identifiable {
+    case settings
+    case activityPicker
+    
+    var id: Int { hashValue }
 }
 
 // MARK: - Main App
@@ -117,17 +125,17 @@ struct MyHabitTrackerApp: App {
         )
         
         let navBarAppearance = UINavigationBarAppearance()
-                    navBarAppearance.configureWithOpaqueBackground()
-                    navBarAppearance.backgroundColor = UIColor(Color(hex: "31363F"))
-                    navBarAppearance.titleTextAttributes = [
-                        .foregroundColor: UIColor(Color(hex: "EEEEEE"))
-                    ]
-                    navBarAppearance.largeTitleTextAttributes = [
-                        .foregroundColor: UIColor(Color(hex: "EEEEEE"))
-                    ]
+        navBarAppearance.configureWithOpaqueBackground()
+        navBarAppearance.backgroundColor = UIColor(Color(hex: "31363F"))
+        navBarAppearance.titleTextAttributes = [
+            .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+        ]
+        navBarAppearance.largeTitleTextAttributes = [
+            .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+        ]
                     
-                    UINavigationBar.appearance().standardAppearance = navBarAppearance
-                    UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
+        UINavigationBar.appearance().standardAppearance = navBarAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
     }
     
     var body: some Scene {
@@ -593,7 +601,9 @@ struct NewTaskView: View {
     }
 }
 
-// MARK: - Focus View
+// MARK: - FocusView
+
+// In FocusView:
 
 struct FocusView: View {
     // Timer state variables
@@ -602,25 +612,33 @@ struct FocusView: View {
     @State private var remainingTime: TimeInterval = FocusPreset.pomodoro.duration
     @State private var isRunning: Bool = false
     @State private var timer: Timer? = nil
-    
-    // Other state variables
-    @State private var showSettings: Bool = false
+
+    // Custom focus state
+    @State private var customDuration: TimeInterval = 25 * 60
+    @State private var showCustomFocusSheet: Bool = false
+
+    // Activity and sheet state variables
     @State private var selectedActivity: String = "General Focus"
+    @State private var activeSheet: ActiveFocusSheet? = nil
+
+    // Session options
     @State private var backgroundNoiseOn: Bool = false
     @State private var dndOn: Bool = false
     @State private var sessionEndedAlert: Bool = false
-    
+
+    @EnvironmentObject var habitStore: HabitStore
+
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                // MARK: Header / Title Area
+                // Header / Title Area
                 HStack {
-                    Text("Focus")
+                    Text("Focus Timer")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(Color(hex: "EEEEEE"))
                     Spacer()
-                    Button(action: { showSettings = true }) {
+                    Button(action: { activeSheet = .settings }) {
                         Image(systemName: "gearshape")
                             .font(.title)
                             .foregroundColor(Color(hex: "836FFF"))
@@ -628,17 +646,14 @@ struct FocusView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top)
-                
+
                 Spacer()
-                
-                // MARK: Current Focus Session Panel - Timer Display
+
+                // Timer Display
                 ZStack {
-                    // Background circle for progress track
                     Circle()
                         .stroke(Color.gray.opacity(0.3), lineWidth: 20)
                         .frame(width: 200, height: 200)
-                    
-                    // Dynamic circular progress based on remaining time
                     Circle()
                         .trim(from: 0, to: CGFloat(remainingTime / duration))
                         .stroke(
@@ -648,42 +663,47 @@ struct FocusView: View {
                         .rotationEffect(.degrees(-90))
                         .frame(width: 200, height: 200)
                         .animation(.linear, value: remainingTime)
-                    
-                    // Timer text display
                     Text(timeString(time: remainingTime))
                         .font(.system(size: 48, weight: .bold, design: .monospaced))
                         .foregroundColor(Color(hex: "EEEEEE"))
                 }
-                
-                // Activity label below timer
-                Text(selectedActivity)
-                    .font(.title2)
-                    .foregroundColor(Color(hex: "EEEEEE"))
-                
-                // MARK: Controls: Start / Pause / Stop Buttons
+
+                // Activity Selection Button
+                Button(action: {
+                    activeSheet = .activityPicker
+                }) {
+                    Text(selectedPreset.rawValue)
+                        .font(.title2)
+                        .foregroundColor(Color(hex: "EEEEEE"))
+                }
+
+                // Controls: Start / Pause / Stop Buttons
                 HStack(spacing: 40) {
                     if !isRunning && remainingTime < duration {
-                        // When paused, allow resume
                         Button(action: startTimer) {
                             Label("Resume", systemImage: "play.fill")
+                                .foregroundColor(Color(hex: "EEEEEE"))
                         }
                     } else if !isRunning {
                         Button(action: startTimer) {
                             Label("Start", systemImage: "play.fill")
+                                .foregroundColor(Color(hex: "EEEEEE"))
                         }
                     } else {
                         Button(action: pauseTimer) {
                             Label("Pause", systemImage: "pause.fill")
+                                .foregroundColor(Color(hex: "EEEEEE"))
                         }
                     }
                     Button(action: stopTimer) {
                         Label("Stop", systemImage: "stop.fill")
+                            .foregroundColor(Color(hex: "EEEEEE"))
                     }
                 }
                 .font(.title2)
                 .foregroundColor(Color(hex: "836FFF"))
-                
-                // MARK: Session Type Selector (Preset Picker)
+
+                // Session Type Selector (Preset Picker)
                 Picker("Session Type", selection: $selectedPreset) {
                     ForEach(FocusPreset.allCases) { preset in
                         Text(preset.rawValue).tag(preset)
@@ -692,32 +712,60 @@ struct FocusView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
                 .onChange(of: selectedPreset) { newValue in
-                    duration = newValue.duration
-                    remainingTime = newValue.duration
-                    if isRunning { stopTimer() }
+                    if newValue == .custom {
+                        // Show the sheet for entering custom minutes
+                        showCustomFocusSheet = true
+                    } else {
+                        duration = newValue.duration
+                        remainingTime = newValue.duration
+                    }
                 }
-                
-                // MARK: Session Options: Toggles for Background Noise and DND
-                HStack(spacing: 40) {
-                    Toggle(isOn: $backgroundNoiseOn) {
+
+                // Session Options: Toggles
+                HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "speaker.wave.2.fill")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                        Toggle("", isOn: $backgroundNoiseOn)
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                            .labelsHidden()
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
-                    
-                    Toggle(isOn: $dndOn) {
+                    .frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
                         Image(systemName: "moon.zzz.fill")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                        Toggle("", isOn: $dndOn)
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                            .labelsHidden()
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                    .frame(maxWidth: .infinity)
                 }
+                .padding(.horizontal, 20)
                 .font(.title)
-                .padding(.horizontal)
-                
+
                 Spacer()
             }
             .background(Color(hex: "31363F").ignoresSafeArea())
             .navigationBarHidden(true)
-            .sheet(isPresented: $showSettings) {
-                FocusSettingsView()
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .settings:
+                    FocusSettingsView()
+                case .activityPicker:
+                    ActivityPickerView { newActivity in
+                        selectedActivity = newActivity
+                        activeSheet = nil
+                    }
+                    .environmentObject(habitStore)
+                }
+            }
+            // Present the custom focus sheet when needed.
+            .sheet(isPresented: $showCustomFocusSheet, onDismiss: {
+                // Update the timer to use the custom duration.
+                duration = customDuration
+                remainingTime = customDuration
+            }) {
+                CustomFocusDurationSheet(customDuration: $customDuration, isPresented: $showCustomFocusSheet)
             }
             .alert(isPresented: $sessionEndedAlert) {
                 Alert(
@@ -728,11 +776,9 @@ struct FocusView: View {
             }
         }
     }
-    
-    // MARK: Timer Methods
-    
+
+    // Timer methods...
     func startTimer() {
-        // If timer has finished previously, reset the remaining time
         if remainingTime <= 0 {
             remainingTime = duration
         }
@@ -745,46 +791,70 @@ struct FocusView: View {
                 timer?.invalidate()
                 isRunning = false
                 sessionEndedAlert = true
-                // Optionally: Log session details here
             }
         }
     }
-    
+
     func pauseTimer() {
         isRunning = false
         timer?.invalidate()
     }
-    
+
     func stopTimer() {
         isRunning = false
         timer?.invalidate()
         remainingTime = duration
-        // Optionally: Prompt confirmation or log session data
     }
-    
-    // MARK: Utility Methods
-    
+
+    // Utility methods...
     func timeString(time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%02d:%02d", minutes, seconds)
     }
-    
+
     func gradientForTimer() -> AngularGradient {
-        // Adjust colors dynamically based on progress: green → yellow → red
         let progress = remainingTime / duration
-        let colors: [Color]
-        if progress > 0.5 {
-            colors = [Color(hex: "9B59B6"), Color(hex: "836FFF")]
-        } else {
-            colors = [Color(hex: "836FFF"), Color(hex: "8E44AD")]
-        }
+        let colors: [Color] = progress > 0.5 ?
+            [Color(hex: "9B59B6"), Color(hex: "836FFF")] :
+            [Color(hex: "836FFF"), Color(hex: "8E44AD")]
         return AngularGradient(gradient: Gradient(colors: colors), center: .center)
     }
 }
 
-// MARK: - FocusSettingsView (Stub)
+// MARK: - ActivityPickerView
+struct ActivityPickerView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var habitStore: HabitStore
+    var onSelect: (String) -> Void
+    
+    var body: some View {
+        NavigationView {
+            List {
+                Button(action: {
+                    onSelect("General Focus")
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Text("General Focus")
+                }
+                ForEach(habitStore.habits) { habit in
+                    Button(action: {
+                        onSelect(habit.name)
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text(habit.name)
+                    }
+                }
+            }
+            .navigationTitle("Select Activity")
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+}
 
+// MARK: - FocusSettingsView (Stub)
 struct FocusSettingsView: View {
     @Environment(\.presentationMode) var presentationMode
     
@@ -835,6 +905,36 @@ struct FocusSettingsView: View {
         }
     }
 }
+
+struct CustomFocusDurationSheet: View {
+    @Binding var customDuration: TimeInterval
+    @Binding var isPresented: Bool
+    @State private var minutesInput: String = ""
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Enter Focus Duration (minutes)")) {
+                    TextField("Minutes", text: $minutesInput)
+                        .keyboardType(.numberPad)
+                }
+            }
+            .navigationTitle("Custom Focus Duration")
+            .navigationBarItems(
+                leading: Button("Cancel") {
+                    isPresented = false
+                },
+                trailing: Button("Save") {
+                    if let minutes = Double(minutesInput), minutes > 0 {
+                        customDuration = minutes * 60  // convert minutes to seconds
+                        isPresented = false
+                    }
+                }
+            )
+        }
+    }
+}
+
 
 // MARK: - Mood View
 
