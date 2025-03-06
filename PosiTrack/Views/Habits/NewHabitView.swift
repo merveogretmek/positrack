@@ -3,24 +3,23 @@ import SwiftUI
 struct NewHabitView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var habitStore: HabitStore
-    
+
+    var startDate: Date
+
     @State private var habitName: String = ""
     @State private var unit: String = ""
     @State private var goal: String = ""
-    @State private var frequencySelection: Int = 0  // 0: Daily, 1: Weekly, 2: Custom
+    @State private var frequencySelection: Int = 0  // 0: Daily, 1: Weekly
     @State private var timePreference: Date = Date()
     @State private var remindersOn: Bool = false
     @State private var errorMessage: String = ""
-    
-    // Custom frequency in days
-    @State private var customFrequency: String = ""
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 Color(hex: "31363F")
                     .ignoresSafeArea()
-                
+
                 Form {
                     // MARK: - Habit Name
                     Section(header:
@@ -57,7 +56,6 @@ struct NewHabitView: View {
                         Picker("Frequency", selection: $frequencySelection) {
                             Text("Daily").tag(0)
                             Text("Weekly").tag(1)
-                            Text("Custom").tag(2)
                         }
                         .pickerStyle(SegmentedPickerStyle())
                         .onAppear {
@@ -71,28 +69,6 @@ struct NewHabitView: View {
                                 [.foregroundColor: UIColor(Color(hex: "EEEEEE"))],
                                 for: .selected
                             )
-                        }
-                        
-                        if frequencySelection == 2 {
-                            HStack(spacing: 8) {
-                                Text("Days:")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
-                                
-                                TextField(" ", text: $customFrequency)
-                                    .keyboardType(.numberPad)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .frame(width: 60)
-                                
-                                Button("Set") {
-                                    if let days = Int(customFrequency), days > 0 {
-                                        // Valid number entered; you may use it as needed
-                                    } else {
-                                        customFrequency = ""
-                                    }
-                                }
-                                .foregroundColor(Color(hex: "836FFF"))
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                     .listRowBackground(Color(hex: "31363F"))
@@ -120,7 +96,7 @@ struct NewHabitView: View {
                     }
                     .listRowBackground(Color(hex: "31363F"))
                     
-                    // MARK: - Error
+                    // MARK: - Error Message
                     if !errorMessage.isEmpty {
                         Section {
                             Text(errorMessage)
@@ -137,13 +113,9 @@ struct NewHabitView: View {
                     presentationMode.wrappedValue.dismiss()
                 },
                 trailing: Button("Save") {
+                    // Validate required fields.
                     if habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         errorMessage = "Please enter a habit name"
-                        return
-                    }
-                    
-                    if frequencySelection == 2 && customFrequency.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        errorMessage = "Please enter a custom frequency in days"
                         return
                     }
                     
@@ -157,16 +129,23 @@ struct NewHabitView: View {
                         return
                     }
                     
-                    // Create a new habit with default progress 0, streak 0, and the reminder flag
-                    let newHabit = Habit(name: habitName,
-                                         isNew: true,
-                                         progress: 0.0,
-                                         goal: goalValue,
-                                         unit: unit,
-                                         streak: 0,
-                                         reminder: remindersOn)
-                    habitStore.habits.append(newHabit)
+                    // Determine the frequency.
+                    let selectedFrequency: HabitFrequency = frequencySelection == 0 ? .daily : .weekly
                     
+                    // Create the new habit using the provided start date.
+                    let newHabit = Habit(
+                        creationDate: startDate,
+                        name: habitName,
+                        isNew: true,
+                        progress: 0.0,
+                        goal: goalValue,
+                        unit: unit,
+                        streak: 0,
+                        reminder: remindersOn,
+                        frequency: selectedFrequency
+                    )
+                    
+                    habitStore.habits.append(newHabit)
                     presentationMode.wrappedValue.dismiss()
                 }
             )

@@ -4,38 +4,37 @@ struct HabitsView: View {
     @EnvironmentObject var habitStore: HabitStore
     @State private var selectedDate: Date = Date()
     @State private var showNewHabitSheet: Bool = false
-    
-    // Define a palette of four colors.
-    // (Feel free to adjust these hex codes as desired.)
+
+    // Define your color palette.
     let colorPalette: [Color] = [
-        Color(hex: "ADB2D4"), // light purple
-        Color(hex: "C7D9DD"), // light blue
-        Color(hex: "D5E5D5"), // light green
-        Color(hex: "FCE7C8"), // light orange
-        Color(hex: "FFB4A2"), // pink orange
-        Color(hex: "C8AAAA"), // light brown
-        Color(hex: "D7D3BF"), // light khaki
-        Color(hex: "D4F6FF"), // baby blue
-        Color(hex: "C9E9D2"), // bright green
-        Color(hex: "FFEFEF"), // light pink
-        Color(hex: "FF8080"), // pink red
-        Color(hex: "95BDFF")  // bright blue
+        Color(hex: "ADB2D4"),
+        Color(hex: "C7D9DD"),
+        Color(hex: "D5E5D5"),
+        Color(hex: "FCE7C8"),
+        Color(hex: "FFB4A2"),
+        Color(hex: "C8AAAA"),
+        Color(hex: "D7D3BF"),
+        Color(hex: "D4F6FF"),
+        Color(hex: "C9E9D2"),
+        Color(hex: "FFEFEF"),
+        Color(hex: "FF8080"),
+        Color(hex: "95BDFF")
     ]
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 Color(hex: "31363F")
                     .ignoresSafeArea()
-                
+
                 VStack {
-                    // Top selected date
+                    // Top selected date display.
                     Text(Formatter.displayDate.string(from: selectedDate))
                         .font(.custom("Varela Round", size: 34))
                         .padding(.top)
                         .foregroundColor(Color(hex: "EEEEEE"))
                     
-                    // Horizontal scroll of dates
+                    // Horizontal scroll of dates.
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
                             ForEach(getWeekDates(for: selectedDate), id: \.self) { date in
@@ -73,10 +72,12 @@ struct HabitsView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 16)
                     
-                    // List of habits or placeholder
-                    if habitStore.habits.isEmpty {
+                    // Filter habits that should display on the selected date.
+                    let displayedIndices = habitStore.habits.indices.filter { habitStore.habits[$0].shouldDisplay(on: selectedDate) }
+                    
+                    if displayedIndices.isEmpty {
                         Spacer()
-                        Text("You don't have any habits yet.")
+                        Text("You don't have any habits for this day.")
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
@@ -84,12 +85,12 @@ struct HabitsView: View {
                     } else {
                         ScrollView {
                             VStack(spacing: 0) {
-                                // Iterate over the indices so we can assign a color based on order.
-                                ForEach(habitStore.habits.indices, id: \.self) { index in
+                                // Use the enumerated indices so that the color selection works correctly.
+                                ForEach(Array(displayedIndices.enumerated()), id: \.element) { (offset, index) in
                                     NavigationLink(destination: HabitProgressView(habit: $habitStore.habits[index])) {
                                         HabitRowView(
                                             habit: habitStore.habits[index],
-                                            color: colorPalette[index % colorPalette.count]
+                                            color: colorPalette[offset % colorPalette.count]
                                         )
                                     }
                                 }
@@ -99,7 +100,6 @@ struct HabitsView: View {
                     }
                 }
             }
-            // Remove the navigation bar title
             .navigationBarTitle("")
             .navigationBarItems(trailing:
                 Button(action: {
@@ -110,7 +110,8 @@ struct HabitsView: View {
             )
         }
         .sheet(isPresented: $showNewHabitSheet) {
-            NewHabitView()
+            // Pass the selected date as the start date.
+            NewHabitView(startDate: selectedDate)
         }
     }
     

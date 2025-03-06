@@ -3,15 +3,18 @@ import SwiftUI
 struct HabitProgressView: View {
     @Environment(\.presentationMode) var presentationMode
     @Binding var habit: Habit
+    // Optional deletion closure provided by the parent view
+    var onDelete: (() -> Void)?
+    
     @State private var manualAmount: String = ""
     @State private var isManualEntryVisible: Bool = false
 
-    // Compute progress as a fraction of the goal
+    // Compute progress as a fraction of the daily goal.
     var progressPercentage: Double {
         min(habit.progress / habit.goal, 1.0)
     }
     
-    // Choose gradient colors based on the progress
+    // Choose gradient colors based on the progress.
     var gradientColors: [Color] {
         progressPercentage > 0.5 ?
             [Color(hex: "9B59B6"), Color(hex: "836FFF")] :
@@ -20,18 +23,15 @@ struct HabitProgressView: View {
     
     var body: some View {
         ZStack {
-            // Overall background color
             Color(hex: "31363F")
                 .ignoresSafeArea()
             
             VStack(spacing: 30) {
-                // Progress circle
+                // Progress circle with inner content (percentage, progress text, plus button).
                 ZStack {
-                    // Background circle: thin and less opaque
                     Circle()
                         .stroke(Color(hex: "EEEEEE").opacity(0.5), lineWidth: 5)
                     
-                    // Progress circle with gradient stroke
                     Circle()
                         .trim(from: 0, to: CGFloat(progressPercentage))
                         .stroke(
@@ -44,21 +44,17 @@ struct HabitProgressView: View {
                         .rotationEffect(Angle(degrees: 270))
                         .animation(.easeInOut, value: habit.progress)
                     
-                    // Inner content: big percentage, progress text and a smaller inline plus button
                     VStack(spacing: 8) {
-                        // Big percentage text in the center
                         Text("\(Int(progressPercentage * 100))%")
                             .font(.system(size: 50, weight: .bold))
                             .foregroundColor(Color(hex: "EEEEEE"))
                         
-                        // Progress text below percentage (e.g. "0 / 10000 unit")
                         Text("\(Int(habit.progress)) / \(Int(habit.goal)) \(habit.unit)")
                             .font(.headline)
                             .foregroundColor(Color(hex: "EEEEEE"))
                         
-                        // Smaller inline plus button that adds 1 unit
                         Button(action: {
-                            habit.progress += 1
+                            addProgress(amount: 1)
                         }) {
                             Image(systemName: "plus")
                                 .font(.body)
@@ -71,9 +67,8 @@ struct HabitProgressView: View {
                 .frame(width: 350, height: 350)
                 .padding(.top, 50)
                 
-                // Control buttons: plus and reset buttons
+                // Control buttons for manual plus and reset.
                 HStack(spacing: 30) {
-                    // Left Plus Button toggles manual entry field visibility
                     Button(action: {
                         withAnimation {
                             isManualEntryVisible.toggle()
@@ -86,9 +81,10 @@ struct HabitProgressView: View {
                             .background(Circle().fill(Color(hex: "836FFF")))
                     }
                     
-                    // Right Reset Button
                     Button(action: {
+                        // Reset the progress for today.
                         habit.progress = 0
+                        habit.lastProgressDate = nil
                     }) {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.title2)
@@ -99,20 +95,20 @@ struct HabitProgressView: View {
                 }
                 .padding(.horizontal)
                 
-                // Manual entry field appears below the buttons
+                // Manual entry field.
                 if isManualEntryVisible {
                     HStack(spacing: 8) {
                         TextField("Enter amount", text: $manualAmount)
                             .keyboardType(.decimalPad)
-                            .foregroundColor(Color(hex: "222831")) // dark grey text
+                            .foregroundColor(Color(hex: "222831"))
                             .padding()
-                            .background(Color(hex: "EEEEEE"))  // text field background color
+                            .background(Color(hex: "EEEEEE"))
                             .cornerRadius(8)
-                            .frame(width: 200) // Adjust width as needed
+                            .frame(width: 200)
                         
                         Button("Add") {
                             if let amount = Double(manualAmount) {
-                                habit.progress += amount
+                                addProgress(amount: amount)
                             }
                             manualAmount = ""
                             withAnimation {
@@ -130,10 +126,9 @@ struct HabitProgressView: View {
                 Spacer()
             }
         }
-        // Hide the default back button and add a custom one in the toolbar
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            // Left back button remains unchanged
+            // Left back button.
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
                     presentationMode.wrappedValue.dismiss()
@@ -145,12 +140,69 @@ struct HabitProgressView: View {
                     .foregroundColor(Color(hex: "EEEEEE"))
                 }
             }
-            // Right edit button using a pencil icon
+            // Right More button with a Menu containing Edit and Delete options.
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: EditHabitView(habit: $habit)) {
-                    Image(systemName: "pencil")
+                Menu {
+                    NavigationLink(destination: EditHabitView(habit: $habit)) {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        onDelete?()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
                         .foregroundColor(Color(hex: "EEEEEE"))
                 }
+            }
+        }
+    }
+    
+    /// Adds progress by a given amount while ensuring daily reset.
+    /// - On a new day, resets the progress and checks if yesterday was completed.
+    /// - If yesterday wasn’t completed, resets the streak.
+    /// - When the daily goal is reached, marks the day as completed and updates the streak.
+    private func addProgress(amount: Double) {
+        let today = Calendar.current.startOfDay(for: Date())
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)
+        
+        // If this is a new day (progress not updated today), reset today's progress.
+        if let lastProgress = habit.lastProgressDate {
+            if !Calendar.current.isDate(lastProgress, inSameDayAs: today) {
+                habit.progress = 0
+                // Reset streak if yesterday wasn’t completed.
+                if let lastCompleted = habit.lastCompletionDate,
+                   !Calendar.current.isDate(lastCompleted, inSameDayAs: yesterday ?? today) {
+                    habit.streak = 0
+                } else if habit.lastCompletionDate == nil {
+                    habit.streak = 0
+                }
+            }
+        } else {
+            // First time adding progress.
+            habit.progress = 0
+        }
+        
+        // Update the progress update timestamp.
+        habit.lastProgressDate = Date()
+        
+        // Add the specified amount.
+        habit.progress += amount
+        
+        // Check if the daily goal is reached.
+        if habit.progress >= habit.goal {
+            habit.progress = habit.goal  // Cap progress at the goal.
+            // Only update the streak if not already completed today.
+            if habit.lastCompletionDate == nil || !Calendar.current.isDate(habit.lastCompletionDate!, inSameDayAs: today) {
+                // If yesterday was completed, streak continues; otherwise, reset to 1.
+                if let lastCompleted = habit.lastCompletionDate,
+                   Calendar.current.isDate(lastCompleted, inSameDayAs: yesterday ?? today) {
+                    habit.streak += 1
+                } else {
+                    habit.streak = 1
+                }
+                habit.lastCompletionDate = today
             }
         }
     }

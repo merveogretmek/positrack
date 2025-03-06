@@ -2,24 +2,41 @@ import SwiftUI
 
 struct HabitRowView: View {
     var habit: Habit
-    var color: Color  // New property to receive the color
+    var color: Color
+
+    // Computed property to determine the flame color based on the streak value.
+    var flameColor: Color {
+        if habit.streak == 0 {
+            return Color.gray
+        } else if habit.streak < 10 {
+            return Color.yellow
+        } else if habit.streak < 50 {
+            return Color.orange
+        } else {
+            return Color.red
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // First Line: Habit name and streak days
+            // First line: Habit name and streak (flame icon + number).
             HStack {
                 Text(habit.name)
                     .font(.custom("Varela Round", size: 18))
                     .bold()
                     .foregroundColor(Color(hex: "222831"))
                 Spacer()
-                Text("\(habit.streak) days")
-                    .font(.custom("Varela Round", size: 18))
-                    .bold()
-                    .foregroundColor(Color(hex: "222831"))
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill")
+                        .foregroundColor(flameColor)
+                    Text("\(habit.streak)")
+                        .font(.custom("Varela Round", size: 18))
+                        .bold()
+                        .foregroundColor(Color(hex: "222831"))
+                }
             }
             
-            // Second Line: Progress/Goal and Unit, and reminder symbol if enabled
+            // Second line: Progress/goal and unit, with reminder icon if enabled.
             HStack {
                 Text("\(Int(habit.progress))/\(Int(habit.goal))")
                     .font(.custom("Varela Round", size: 16))
@@ -38,7 +55,7 @@ struct HabitRowView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(color)  // Use the passed-in color for the background
+                .fill(color)
         )
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
