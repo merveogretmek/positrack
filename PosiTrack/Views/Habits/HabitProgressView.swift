@@ -1,10 +1,11 @@
 import SwiftUI
 
 struct HabitProgressView: View {
+    @Environment(\.presentationMode) var presentationMode
     @Binding var habit: Habit
     @State private var manualAmount: String = ""
-    @State private var showingPopup: Bool = false
-    
+    @State private var isManualEntryVisible: Bool = false
+
     // Compute progress as a fraction of the goal
     var progressPercentage: Double {
         min(habit.progress / habit.goal, 1.0)
@@ -18,15 +19,17 @@ struct HabitProgressView: View {
     }
     
     var body: some View {
-        NavigationView {
+        ZStack {
+            // Overall background color
+            Color(hex: "31363F")
+                .ignoresSafeArea()
+            
             VStack(spacing: 30) {
-                // Round progress bar with custom inner content
+                // Progress circle
                 ZStack {
-                    // Background circle
+                    // Background circle: thin and less opaque
                     Circle()
-                        .stroke(lineWidth: 20)
-                        .opacity(0.3)
-                        .foregroundColor(Color.blue)
+                        .stroke(Color(hex: "EEEEEE").opacity(0.5), lineWidth: 5)
                     
                     // Progress circle with gradient stroke
                     Circle()
@@ -36,91 +39,119 @@ struct HabitProgressView: View {
                                 gradient: Gradient(colors: gradientColors),
                                 center: .center
                             ),
-                            style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round)
+                            style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round)
                         )
                         .rotationEffect(Angle(degrees: 270))
                         .animation(.easeInOut, value: habit.progress)
                     
-                    // Inner content: progress text and inline plus button for +1 increment
-                    HStack(spacing: 8) {
+                    // Inner content: big percentage, progress text and a smaller inline plus button
+                    VStack(spacing: 8) {
+                        // Big percentage text in the center
+                        Text("\(Int(progressPercentage * 100))%")
+                            .font(.system(size: 50, weight: .bold))
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                        
+                        // Progress text below percentage (e.g. "0 / 10000 unit")
                         Text("\(Int(habit.progress)) / \(Int(habit.goal)) \(habit.unit)")
                             .font(.headline)
-                            .bold()
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                        
+                        // Smaller inline plus button that adds 1 unit
                         Button(action: {
                             habit.progress += 1
                         }) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(.blue)
+                            Image(systemName: "plus")
+                                .font(.body)
+                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .padding(6)
+                                .background(Circle().fill(Color(hex: "836FFF")))
                         }
                     }
                 }
-                .frame(width: 200, height: 200)
+                .frame(width: 350, height: 350)
                 .padding(.top, 50)
                 
-                // Control buttons under the progress circle:
-                // - Plus button to bring up the manual entry popup.
-                // - Reset button with a round arrow icon.
-                HStack(spacing: 50) {
+                // Control buttons: plus and reset buttons
+                HStack(spacing: 30) {
+                    // Left Plus Button toggles manual entry field visibility
                     Button(action: {
-                        showingPopup = true
+                        withAnimation {
+                            isManualEntryVisible.toggle()
+                        }
                     }) {
-                        Image(systemName: "plus.circle")
-                            .font(.largeTitle)
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .padding(8)
+                            .background(Circle().fill(Color(hex: "836FFF")))
                     }
                     
+                    // Right Reset Button
                     Button(action: {
                         habit.progress = 0
                     }) {
-                        Image(systemName: "arrow.counterclockwise.circle")
-                            .font(.largeTitle)
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.title2)
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .padding(8)
+                            .background(Circle().fill(Color(hex: "836FFF")))
                     }
+                }
+                .padding(.horizontal)
+                
+                // Manual entry field appears below the buttons
+                if isManualEntryVisible {
+                    HStack(spacing: 8) {
+                        TextField("Enter amount", text: $manualAmount)
+                            .keyboardType(.decimalPad)
+                            .foregroundColor(Color(hex: "222831")) // dark grey text
+                            .padding()
+                            .background(Color(hex: "EEEEEE"))  // text field background color
+                            .cornerRadius(8)
+                            .frame(width: 200) // Adjust width as needed
+                        
+                        Button("Add") {
+                            if let amount = Double(manualAmount) {
+                                habit.progress += amount
+                            }
+                            manualAmount = ""
+                            withAnimation {
+                                isManualEntryVisible = false
+                            }
+                        }
+                        .padding(8)
+                        .background(Capsule().fill(Color(hex: "836FFF")))
+                        .foregroundColor(Color(hex: "EEEEEE"))
+                    }
+                    .padding(.horizontal)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 
                 Spacer()
             }
-            .navigationTitle("Habit Progress")
-            .sheet(isPresented: $showingPopup) {
-                ManualEntryView(habit: $habit, manualAmount: $manualAmount, isPresented: $showingPopup)
-            }
         }
-    }
-}
-
-struct ManualEntryView: View {
-    @Binding var habit: Habit
-    @Binding var manualAmount: String
-    @Binding var isPresented: Bool
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("Enter the amount to add:")
-                    .font(.headline)
-                TextField("Amount", text: $manualAmount)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
-                HStack {
-                    Button("Cancel") {
-                        isPresented = false
+        // Hide the default back button and add a custom one in the toolbar
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            // Left back button remains unchanged
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text(habit.name)
                     }
-                    .padding()
-                    Spacer()
-                    Button("Add") {
-                        if let amount = Double(manualAmount) {
-                            habit.progress += amount
-                        }
-                        manualAmount = ""
-                        isPresented = false
-                    }
-                    .padding()
+                    .foregroundColor(Color(hex: "EEEEEE"))
                 }
-                .padding(.horizontal)
-                Spacer()
             }
-            .navigationTitle("Add Value")
-            .navigationBarTitleDisplayMode(.inline)
+            // Right edit button using a pencil icon
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(destination: EditHabitView(habit: $habit)) {
+                    Image(systemName: "pencil")
+                        .foregroundColor(Color(hex: "EEEEEE"))
+                }
+            }
         }
     }
 }

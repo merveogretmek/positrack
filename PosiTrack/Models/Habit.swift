@@ -7,5 +7,7 @@ struct Habit: Identifiable {
     var progress: Double
     var goal: Double
     var unit: String
+    var streak: Int
+    var reminder: Bool
 }
 

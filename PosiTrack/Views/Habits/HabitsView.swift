@@ -5,6 +5,23 @@ struct HabitsView: View {
     @State private var selectedDate: Date = Date()
     @State private var showNewHabitSheet: Bool = false
     
+    // Define a palette of four colors.
+    // (Feel free to adjust these hex codes as desired.)
+    let colorPalette: [Color] = [
+        Color(hex: "ADB2D4"), // light purple
+        Color(hex: "C7D9DD"), // light blue
+        Color(hex: "D5E5D5"), // light green
+        Color(hex: "FCE7C8"), // light orange
+        Color(hex: "FFB4A2"), // pink orange
+        Color(hex: "C8AAAA"), // light brown
+        Color(hex: "D7D3BF"), // light khaki
+        Color(hex: "D4F6FF"), // baby blue
+        Color(hex: "C9E9D2"), // bright green
+        Color(hex: "FFEFEF"), // light pink
+        Color(hex: "FF8080"), // pink red
+        Color(hex: "95BDFF")  // bright blue
+    ]
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -67,33 +84,23 @@ struct HabitsView: View {
                     } else {
                         ScrollView {
                             VStack(spacing: 0) {
-                                ForEach($habitStore.habits) { $habit in
-                                    NavigationLink(destination: HabitProgressView(habit: $habit)) {
-                                        HStack {
-                                            Text(habit.name)
-                                                .foregroundColor(Color(hex: "222831"))
-                                                .padding()
-                                            Spacer()
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color(hex: "EEEEEE"))
+                                // Iterate over the indices so we can assign a color based on order.
+                                ForEach(habitStore.habits.indices, id: \.self) { index in
+                                    NavigationLink(destination: HabitProgressView(habit: $habitStore.habits[index])) {
+                                        HabitRowView(
+                                            habit: habitStore.habits[index],
+                                            color: colorPalette[index % colorPalette.count]
                                         )
-                                        // Add your horizontal padding here
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 6)
                                     }
                                 }
                             }
                         }
                         .background(Color(hex: "31363F"))
-
                     }
                 }
             }
-            // Use a navigation bar title and add a plus button on the top right
-            .navigationBarTitle("") // Remove the date from the navigation bar title
+            // Remove the navigation bar title
+            .navigationBarTitle("")
             .navigationBarItems(trailing:
                 Button(action: {
                     showNewHabitSheet = true

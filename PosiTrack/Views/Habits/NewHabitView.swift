@@ -18,7 +18,6 @@ struct NewHabitView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Set the overall background color
                 Color(hex: "31363F")
                     .ignoresSafeArea()
                 
@@ -74,7 +73,6 @@ struct NewHabitView: View {
                             )
                         }
                         
-                        // Show a small row for Custom input
                         if frequencySelection == 2 {
                             HStack(spacing: 8) {
                                 Text("Days:")
@@ -86,17 +84,14 @@ struct NewHabitView: View {
                                     .frame(width: 60)
                                 
                                 Button("Set") {
-                                    // Optional: Validate or store `customFrequency` right here
                                     if let days = Int(customFrequency), days > 0 {
-                                        // Valid number entered
+                                        // Valid number entered; you may use it as needed
                                     } else {
-                                        // Reset or show error
                                         customFrequency = ""
                                     }
                                 }
                                 .foregroundColor(Color(hex: "836FFF"))
                             }
-                            // Center the entire row
                             .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
@@ -142,19 +137,16 @@ struct NewHabitView: View {
                     presentationMode.wrappedValue.dismiss()
                 },
                 trailing: Button("Save") {
-                    // Basic validation
                     if habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         errorMessage = "Please enter a habit name"
                         return
                     }
                     
-                    // If custom frequency is selected, ensure it's not empty
                     if frequencySelection == 2 && customFrequency.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         errorMessage = "Please enter a custom frequency in days"
                         return
                     }
                     
-                    // Convert goal string to a valid number
                     guard let goalValue = Double(goal), goalValue > 0 else {
                         errorMessage = "Please enter a valid number for the goal"
                         return
@@ -165,9 +157,14 @@ struct NewHabitView: View {
                         return
                     }
                     
-                    
-                    // Create and append new habit with default progress 0
-                    let newHabit = Habit(name: habitName, isNew: true, progress: 0.0, goal: goalValue, unit: unit)
+                    // Create a new habit with default progress 0, streak 0, and the reminder flag
+                    let newHabit = Habit(name: habitName,
+                                         isNew: true,
+                                         progress: 0.0,
+                                         goal: goalValue,
+                                         unit: unit,
+                                         streak: 0,
+                                         reminder: remindersOn)
                     habitStore.habits.append(newHabit)
                     
                     presentationMode.wrappedValue.dismiss()
