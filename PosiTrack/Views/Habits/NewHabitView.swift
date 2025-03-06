@@ -1,21 +1,19 @@
-//
-//  NewHabitView.swift
-//  PosiTrack
-//
-//  Created by Merve Öğretmek on 5.03.2025.
-//
-
 import SwiftUI
 
 struct NewHabitView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var habitStore: HabitStore
+    
     @State private var habitName: String = ""
+    @State private var unit: String = ""
     @State private var goal: String = ""
     @State private var frequencySelection: Int = 0  // 0: Daily, 1: Weekly, 2: Custom
     @State private var timePreference: Date = Date()
     @State private var remindersOn: Bool = false
     @State private var errorMessage: String = ""
+    
+    // Custom frequency in days
+    @State private var customFrequency: String = ""
     
     var body: some View {
         NavigationView {
@@ -25,22 +23,34 @@ struct NewHabitView: View {
                     .ignoresSafeArea()
                 
                 Form {
+                    // MARK: - Habit Name
                     Section(header:
                         Text("Habit Name")
                             .foregroundColor(Color(hex: "EEEEEE"))
                     ) {
-                        CustomTextField(placeholder: "e.g., Drink 8 glasses of water", text: $habitName)
+                        CustomTextField(placeholder: "e.g., Drink water", text: $habitName)
                     }
                     .listRowBackground(Color(hex: "222831"))
                     
+                    // MARK: - Goal
                     Section(header:
-                        Text("Goal (Optional)")
+                        Text("Goal")
                             .foregroundColor(Color(hex: "EEEEEE"))
                     ) {
-                        CustomTextField(placeholder: "Enter your daily goal", text: $goal)
+                        CustomTextField(placeholder: "Enter an amount", text: $goal)
                     }
                     .listRowBackground(Color(hex: "222831"))
                     
+                    // MARK: - Unit
+                    Section(header:
+                        Text("Unit")
+                            .foregroundColor(Color(hex: "EEEEEE"))
+                    ) {
+                        CustomTextField(placeholder: "e.g., Hours, dollars, miles/kms", text: $unit)
+                    }
+                    .listRowBackground(Color(hex: "222831"))
+                    
+                    // MARK: - Frequency
                     Section(header:
                         Text("Frequency")
                             .foregroundColor(Color(hex: "EEEEEE"))
@@ -54,12 +64,45 @@ struct NewHabitView: View {
                         .onAppear {
                             let purpleColor = UIColor(Color(hex: "836FFF"))
                             UISegmentedControl.appearance().selectedSegmentTintColor = purpleColor
-                            UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Color(hex: "EEEEEE"))], for: .normal)
-                            UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Color(hex: "EEEEEE"))], for: .selected)
+                            UISegmentedControl.appearance().setTitleTextAttributes(
+                                [.foregroundColor: UIColor(Color(hex: "EEEEEE"))],
+                                for: .normal
+                            )
+                            UISegmentedControl.appearance().setTitleTextAttributes(
+                                [.foregroundColor: UIColor(Color(hex: "EEEEEE"))],
+                                for: .selected
+                            )
+                        }
+                        
+                        // Show a small row for Custom input
+                        if frequencySelection == 2 {
+                            HStack(spacing: 8) {
+                                Text("Days:")
+                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                
+                                TextField(" ", text: $customFrequency)
+                                    .keyboardType(.numberPad)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 60)
+                                
+                                Button("Set") {
+                                    // Optional: Validate or store `customFrequency` right here
+                                    if let days = Int(customFrequency), days > 0 {
+                                        // Valid number entered
+                                    } else {
+                                        // Reset or show error
+                                        customFrequency = ""
+                                    }
+                                }
+                                .foregroundColor(Color(hex: "836FFF"))
+                            }
+                            // Center the entire row
+                            .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                     .listRowBackground(Color(hex: "31363F"))
                     
+                    // MARK: - Schedule
                     Section(header: Text("Schedule")
                                 .foregroundColor(Color(hex: "EEEEEE"))
                     ) {
@@ -71,6 +114,7 @@ struct NewHabitView: View {
                     }
                     .listRowBackground(Color(hex: "31363F"))
                     
+                    // MARK: - Reminders
                     Section(header:
                         Text("Reminders")
                             .foregroundColor(Color(hex: "EEEEEE"))
@@ -81,6 +125,7 @@ struct NewHabitView: View {
                     }
                     .listRowBackground(Color(hex: "31363F"))
                     
+                    // MARK: - Error
                     if !errorMessage.isEmpty {
                         Section {
                             Text(errorMessage)
@@ -89,7 +134,6 @@ struct NewHabitView: View {
                         .listRowBackground(Color(hex: "31363F"))
                     }
                 }
-                // Hide the default form background so our custom background shows
                 .scrollContentBackground(.hidden)
             }
             .navigationBarTitle("Add a New Habit", displayMode: .inline)
@@ -98,13 +142,35 @@ struct NewHabitView: View {
                     presentationMode.wrappedValue.dismiss()
                 },
                 trailing: Button("Save") {
+                    // Basic validation
                     if habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         errorMessage = "Please enter a habit name"
-                    } else {
-                        let newHabit = Habit(name: habitName, isNew: true)
-                        habitStore.habits.append(newHabit)
-                        presentationMode.wrappedValue.dismiss()
+                        return
                     }
+                    
+                    // If custom frequency is selected, ensure it's not empty
+                    if frequencySelection == 2 && customFrequency.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        errorMessage = "Please enter a custom frequency in days"
+                        return
+                    }
+                    
+                    // Convert goal string to a valid number
+                    guard let goalValue = Double(goal), goalValue > 0 else {
+                        errorMessage = "Please enter a valid number for the goal"
+                        return
+                    }
+                    
+                    if unit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        errorMessage = "Please enter the unit"
+                        return
+                    }
+                    
+                    
+                    // Create and append new habit with default progress 0
+                    let newHabit = Habit(name: habitName, isNew: true, progress: 0.0, goal: goalValue, unit: unit)
+                    habitStore.habits.append(newHabit)
+                    
+                    presentationMode.wrappedValue.dismiss()
                 }
             )
         }

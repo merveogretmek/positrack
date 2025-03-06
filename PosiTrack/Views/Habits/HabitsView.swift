@@ -1,10 +1,3 @@
-//
-//  HabitsView.swift
-//  PosiTrack
-//
-//  Created by Merve Öğretmek on 5.03.2025.
-//
-
 import SwiftUI
 
 struct HabitsView: View {
@@ -72,41 +65,42 @@ struct HabitsView: View {
                             .padding(.horizontal, 32)
                         Spacer()
                     } else {
-                        List {
-                            ForEach(habitStore.habits) { habit in
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color(hex: "EEEEEE"))
-                                    Text(habit.name)
-                                        .foregroundColor(Color(hex: "222831"))
-                                        .padding()
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach($habitStore.habits) { $habit in
+                                    NavigationLink(destination: HabitProgressView(habit: $habit)) {
+                                        HStack {
+                                            Text(habit.name)
+                                                .foregroundColor(Color(hex: "222831"))
+                                                .padding()
+                                            Spacer()
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color(hex: "EEEEEE"))
+                                        )
+                                        // Add your horizontal padding here
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 6)
+                                    }
                                 }
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowBackground(Color.clear)
                             }
                         }
-                        .listStyle(PlainListStyle())
-                        .scrollContentBackground(.hidden)
                         .background(Color(hex: "31363F"))
+
                     }
-                    
-                    // Button to add a new habit
-                    Button(action: {
-                        showNewHabitSheet = true
-                    }) {
-                        Text("Add a new habit")
-                            .foregroundColor(Color(hex: "EEEEEE"))
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color(hex: "836FFF"))
-                            .cornerRadius(8)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
                 }
             }
-            .navigationBarTitle("", displayMode: .inline)
-            .navigationBarHidden(true)
+            // Use a navigation bar title and add a plus button on the top right
+            .navigationBarTitle("") // Remove the date from the navigation bar title
+            .navigationBarItems(trailing:
+                Button(action: {
+                    showNewHabitSheet = true
+                }) {
+                    Image(systemName: "plus")
+                }
+            )
         }
         .sheet(isPresented: $showNewHabitSheet) {
             NewHabitView()
