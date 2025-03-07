@@ -85,12 +85,13 @@ struct HabitsView: View {
                     } else {
                         ScrollView {
                             VStack(spacing: 0) {
-                                // Use the enumerated indices so that the color selection works correctly.
+                                // Pass the selected date to the progress view.
                                 ForEach(Array(displayedIndices.enumerated()), id: \.element) { (offset, index) in
-                                    NavigationLink(destination: HabitProgressView(habit: $habitStore.habits[index])) {
+                                    NavigationLink(destination: HabitProgressView(habit: $habitStore.habits[index], selectedDate: selectedDate)) {
                                         HabitRowView(
                                             habit: habitStore.habits[index],
-                                            color: colorPalette[offset % colorPalette.count]
+                                            color: colorPalette[offset % colorPalette.count],
+                                            selectedDate: selectedDate  // Pass the selected date here
                                         )
                                     }
                                 }
@@ -110,12 +111,9 @@ struct HabitsView: View {
             )
         }
         .sheet(isPresented: $showNewHabitSheet) {
-            // Pass the selected date as the start date.
             NewHabitView(startDate: selectedDate)
         }
     }
-    
-    // MARK: - Utility Methods
     
     func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
         Calendar.current.isDate(date1, inSameDayAs: date2)
@@ -123,9 +121,6 @@ struct HabitsView: View {
     
     func getWeekDates(for referenceDate: Date) -> [Date] {
         let calendar = Calendar.current
-        let offsets = -3...3
-        return offsets.compactMap {
-            calendar.date(byAdding: .day, value: $0, to: referenceDate)
-        }
+        return (-3...3).compactMap { calendar.date(byAdding: .day, value: $0, to: referenceDate) }
     }
 }

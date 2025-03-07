@@ -4,6 +4,7 @@ struct ManualEntryView: View {
     @Binding var habit: Habit
     @Binding var manualAmount: String
     @Binding var isPresented: Bool
+    var selectedDate: Date  // Pass the selected date into the view
     
     var body: some View {
         NavigationView {
@@ -22,7 +23,8 @@ struct ManualEntryView: View {
                     Spacer()
                     Button("Add") {
                         if let amount = Double(manualAmount) {
-                            habit.progress += amount
+                            let key = habit.dateKey(for: selectedDate)
+                            habit.dailyProgress[key] = (habit.dailyProgress[key] ?? 0.0) + amount
                         }
                         manualAmount = ""
                         isPresented = false

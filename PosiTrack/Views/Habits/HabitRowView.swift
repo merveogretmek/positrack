@@ -3,14 +3,20 @@ import SwiftUI
 struct HabitRowView: View {
     var habit: Habit
     var color: Color
+    var selectedDate: Date  // The date for which progress and streak are shown
 
-    // Computed property to determine the flame color based on the streak value.
+    // Use the computed streak for the selected date.
+    var streak: Int {
+        habit.computedStreak(upTo: selectedDate)
+    }
+    
+    // Determine the flame color based on the computed streak.
     var flameColor: Color {
-        if habit.streak == 0 {
+        if streak == 0 {
             return Color.gray
-        } else if habit.streak < 10 {
+        } else if streak < 10 {
             return Color.yellow
-        } else if habit.streak < 50 {
+        } else if streak < 50 {
             return Color.orange
         } else {
             return Color.red
@@ -29,7 +35,7 @@ struct HabitRowView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill")
                         .foregroundColor(flameColor)
-                    Text("\(habit.streak)")
+                    Text("\(streak)")
                         .font(.custom("Varela Round", size: 18))
                         .bold()
                         .foregroundColor(Color(hex: "222831"))
@@ -38,7 +44,7 @@ struct HabitRowView: View {
             
             // Second line: Progress/goal and unit, with reminder icon if enabled.
             HStack {
-                Text("\(Int(habit.progress))/\(Int(habit.goal))")
+                Text("\(Int(habit.progress(on: selectedDate)))/\(Int(habit.goal))")
                     .font(.custom("Varela Round", size: 16))
                     .bold()
                     .foregroundColor(Color(hex: "222831"))
