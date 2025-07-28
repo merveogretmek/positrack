@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TasksView: View {
     @EnvironmentObject var taskStore: TaskStore
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var showingNewTask = false
     @State private var selectedFilter = "All"
     @State private var selectedPriorityFilter = "All"  // Priority
@@ -48,7 +49,7 @@ struct TasksView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F").ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 VStack(alignment: .leading) {
                     // Time-based filter bar
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -57,8 +58,8 @@ struct TasksView: View {
                                 Text(filter)
                                     .padding(.vertical, 8)
                                     .padding(.horizontal, 12)
-                                    .background(selectedFilter == filter ? Color(hex: "836FFF") : Color.clear)
-                                    .foregroundColor(selectedFilter == filter ? Color(hex: "EEEEEE") : .gray)
+                                    .background(selectedFilter == filter ? themeManager.accentColor : Color.clear)
+                                    .foregroundColor(selectedFilter == filter ? themeManager.textColor : themeManager.secondaryTextColor)
                                     .cornerRadius(20)
                                     .onTapGesture {
                                         selectedFilter = filter
@@ -72,7 +73,7 @@ struct TasksView: View {
                     // Priority filter dropdown
                     HStack {
                         Text("Filter by Priority:")
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .foregroundColor(themeManager.textColor)
                         Menu {
                             ForEach(priorityFilters, id: \.self) { filter in
                                 Button(action: {
@@ -88,8 +89,8 @@ struct TasksView: View {
                             }
                             .padding(.vertical, 8)
                             .padding(.horizontal, 12)
-                            .background(Color(hex: "836FFF"))
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .background(themeManager.accentColor)
+                            .foregroundColor(themeManager.textColor)
                             .cornerRadius(20)
                         }
                         Spacer()
@@ -101,19 +102,20 @@ struct TasksView: View {
                     if filteredTasks.isEmpty {
                         Spacer()
                         Text("No tasks available.")
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                             .frame(maxWidth: .infinity, alignment: .center)
                         Spacer()
                     } else {
                         List {
                             ForEach(filteredTasks) { task in
                                 TaskRow(task: task)
-                                    .listRowBackground(Color(hex: "31363F"))
+                                    .listRowBackground(themeManager.backgroundColor)
+                                    .environmentObject(themeManager)
                             }
                             .onDelete(perform: deleteTask)
                         }
                         .listStyle(PlainListStyle())
-                        .background(Color(hex: "31363F"))
+                        .background(themeManager.backgroundColor)
                         .scrollContentBackground(.hidden)
                     }
                 }
@@ -124,13 +126,14 @@ struct TasksView: View {
                             showingNewTask = true
                         }) {
                             Image(systemName: "plus")
-                                .foregroundColor(Color(hex: "836FFF"))
+                                .foregroundColor(themeManager.accentColor)
                         }
                     }
                 }
                 .sheet(isPresented: $showingNewTask) {
                     NewTaskView()
                         .environmentObject(taskStore)
+                        .environmentObject(themeManager)
                 }
             }
         }

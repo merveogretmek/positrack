@@ -9,13 +9,14 @@ import SwiftUI
 
 struct MoodView: View {
     @EnvironmentObject var moodStore: MoodStore
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var showingNewMoodEntry = false
     @State private var selectedPeriod: StatsPeriod = .week
     
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F").ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Quick Stats Section
@@ -40,13 +41,14 @@ struct MoodView: View {
                         showingNewMoodEntry = true
                     }) {
                         Image(systemName: "plus")
-                            .foregroundColor(Color(hex: "836FFF"))
+                            .foregroundColor(themeManager.accentColor)
                     }
                 }
             }
             .sheet(isPresented: $showingNewMoodEntry) {
                 NewMoodEntryView()
                     .environmentObject(moodStore)
+                    .environmentObject(themeManager)
             }
         }
     }
@@ -56,7 +58,7 @@ struct MoodView: View {
             HStack {
                 Text("Quick Overview")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "EEEEEE"))
+                    .foregroundColor(themeManager.textColor)
                 Spacer()
             }
             
@@ -80,8 +82,8 @@ struct MoodView: View {
                 if let mostCommon = stats.mostCommonCategory {
                     StatCard(
                         title: "Most Common",
-                        value: mostCommon.emoji,
-                        icon: "chart.bar.fill",
+                        value: mostCommon.rawValue,
+                        icon: mostCommon.symbol,
                         color: mostCommon.color
                     )
                 }
@@ -95,7 +97,7 @@ struct MoodView: View {
             HStack {
                 Text("Recent Entries")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "EEEEEE"))
+                    .foregroundColor(themeManager.textColor)
                     .padding(.horizontal)
                 Spacer()
             }
@@ -103,12 +105,12 @@ struct MoodView: View {
             List {
                 ForEach(Array(moodStore.moodEntries.prefix(20))) { entry in
                     MoodEntryRow(entry: entry)
-                        .listRowBackground(Color(hex: "31363F"))
+                        .listRowBackground(themeManager.backgroundColor)
                 }
                 .onDelete(perform: deleteMoodEntry)
             }
             .listStyle(PlainListStyle())
-            .background(Color(hex: "31363F"))
+            .background(themeManager.backgroundColor)
             .scrollContentBackground(.hidden)
         }
     }
@@ -119,16 +121,16 @@ struct MoodView: View {
             
             Image(systemName: "moon.stars")
                 .font(.system(size: 60))
-                .foregroundColor(Color(hex: "836FFF"))
+                .foregroundColor(themeManager.accentColor)
             
             Text("Track Your Mood")
                 .font(.title2)
                 .fontWeight(.semibold)
-                .foregroundColor(Color(hex: "EEEEEE"))
+                .foregroundColor(themeManager.textColor)
             
             Text("Start logging your daily moods to understand patterns and improve your wellbeing")
                 .font(.body)
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
@@ -140,7 +142,7 @@ struct MoodView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 32)
                     .padding(.vertical, 16)
-                    .background(Color(hex: "836FFF"))
+                    .background(themeManager.accentColor)
                     .cornerRadius(25)
             }
             .padding(.top, 20)
@@ -162,6 +164,7 @@ struct StatCard: View {
     let value: String
     let icon: String
     let color: String
+    @EnvironmentObject var themeManager: ThemeManager
     
     var body: some View {
         VStack(spacing: 8) {
@@ -172,32 +175,34 @@ struct StatCard: View {
             Text(value)
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(Color(hex: "EEEEEE"))
+                .foregroundColor(themeManager.textColor)
             
             Text(title)
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color(hex: "222831"))
+        .background(themeManager.secondaryBackgroundColor)
         .cornerRadius(12)
     }
 }
 
 struct MoodEntryRow: View {
     let entry: MoodEntry
+    @EnvironmentObject var themeManager: ThemeManager
     
     var body: some View {
         HStack(spacing: 12) {
-            // Mood emoji and category
+            // Mood symbol and category
             VStack(spacing: 4) {
-                Text(entry.category.emoji)
+                Image(systemName: entry.category.symbol)
                     .font(.title2)
+                    .foregroundColor(Color(hex: entry.category.color))
                 
                 Text(entry.subcategory)
                     .font(.caption2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(themeManager.secondaryTextColor)
                     .lineLimit(1)
             }
             
@@ -205,7 +210,7 @@ struct MoodEntryRow: View {
                 HStack {
                     Text(entry.category.rawValue)
                         .font(.headline)
-                        .foregroundColor(Color(hex: "EEEEEE"))
+                        .foregroundColor(themeManager.textColor)
                     
                     Spacer()
                     
@@ -213,7 +218,7 @@ struct MoodEntryRow: View {
                     HStack(spacing: 2) {
                         ForEach(1...5, id: \.self) { star in
                             Image(systemName: star <= entry.intensity ? "star.fill" : "star")
-                                .foregroundColor(star <= entry.intensity ? Color(hex: entry.category.color) : .gray)
+                                .foregroundColor(star <= entry.intensity ? Color(hex: entry.category.color) : themeManager.secondaryTextColor)
                                 .font(.caption)
                         }
                     }
@@ -222,19 +227,19 @@ struct MoodEntryRow: View {
                 if !entry.notes.isEmpty {
                     Text(entry.notes)
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                         .lineLimit(2)
                 }
                 
                 HStack {
                     Text(formatDate(entry.timestamp))
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                     
                     if !entry.triggers.isEmpty {
                         Text("• \(entry.triggers.first?.rawValue ?? "")")
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                     }
                 }
             }

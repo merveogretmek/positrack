@@ -3,6 +3,7 @@ import SwiftUI
 struct NewMoodEntryView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var moodStore: MoodStore
+    @EnvironmentObject var themeManager: ThemeManager
     
     @State private var selectedCategory: MoodCategory = .happy
     @State private var selectedSubcategory: String = ""
@@ -16,7 +17,7 @@ struct NewMoodEntryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F").ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 
                 Form {
                     // Mood Category Section
@@ -25,13 +26,13 @@ struct NewMoodEntryView: View {
                             // Header with animated moon icon
                             HStack {
                                 Image(systemName: "moon.stars.fill")
-                                    .foregroundColor(Color(hex: "836FFF"))
+                                    .foregroundColor(themeManager.accentColor)
                                     .font(.title2)
                                 
                                 Text("How are you feeling right now?")
                                     .font(.title3)
                                     .fontWeight(.medium)
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                                 
                                 Spacer()
                             }
@@ -41,7 +42,7 @@ struct NewMoodEntryView: View {
                             ZStack {
                                 // Background circle
                                 Circle()
-                                    .stroke(Color(hex: "222831"), lineWidth: 2)
+                                    .stroke(themeManager.secondaryBackgroundColor, lineWidth: 2)
                                     .frame(width: 280, height: 280)
                                 
                                 // Mood options arranged in circle
@@ -61,7 +62,7 @@ struct NewMoodEntryView: View {
                                                 .fill(
                                                     selectedCategory == category ? 
                                                     Color(hex: category.color).opacity(0.8) : 
-                                                    Color(hex: "222831")
+                                                    themeManager.secondaryBackgroundColor
                                                 )
                                                 .frame(width: selectedCategory == category ? 60 : 50, height: selectedCategory == category ? 60 : 50)
                                                 .shadow(
@@ -69,14 +70,19 @@ struct NewMoodEntryView: View {
                                                     radius: selectedCategory == category ? 8 : 0
                                                 )
                                             
-                                            VStack(spacing: 2) {
-                                                Text(category.emoji)
-                                                    .font(.system(size: selectedCategory == category ? 24 : 20))
+                                            VStack(spacing: 4) {
+                                                Image(systemName: category.symbol)
+                                                    .font(.system(size: selectedCategory == category ? 22 : 18, weight: .medium))
+                                                    .foregroundColor(
+                                                        selectedCategory == category ? 
+                                                        themeManager.textColor : 
+                                                        Color(hex: category.color)
+                                                    )
                                                 
                                                 Text(category.rawValue)
-                                                    .font(.system(size: selectedCategory == category ? 8 : 7))
+                                                    .font(.system(size: selectedCategory == category ? 9 : 8))
                                                     .fontWeight(selectedCategory == category ? .semibold : .regular)
-                                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                                    .foregroundColor(themeManager.textColor)
                                             }
                                         }
                                         .scaleEffect(selectedCategory == category ? 1.1 : 1.0)
@@ -91,7 +97,7 @@ struct NewMoodEntryView: View {
                                 // Center indicator
                                 if selectedCategory != .happy || !selectedSubcategory.isEmpty {
                                     Circle()
-                                        .fill(Color(hex: "836FFF"))
+                                        .fill(themeManager.accentColor)
                                         .frame(width: 8, height: 8)
                                         .scaleEffect(1.5)
                                         .opacity(0.8)
@@ -102,17 +108,18 @@ struct NewMoodEntryView: View {
                             // Selected mood display
                             if selectedCategory != .happy || !selectedSubcategory.isEmpty {
                                 HStack(spacing: 12) {
-                                    Text(selectedCategory.emoji)
+                                    Image(systemName: selectedCategory.symbol)
                                         .font(.title)
+                                        .foregroundColor(Color(hex: selectedCategory.color))
                                     
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Feeling \(selectedCategory.rawValue.lowercased())")
                                             .font(.headline)
-                                            .foregroundColor(Color(hex: "EEEEEE"))
+                                            .foregroundColor(themeManager.textColor)
                                         
                                         Text("Tap to explore deeper feelings")
                                             .font(.caption)
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(themeManager.secondaryTextColor)
                                     }
                                     
                                     Spacer()
@@ -128,11 +135,11 @@ struct NewMoodEntryView: View {
                         }
                         .padding(.vertical, 12)
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     .listRowInsets(EdgeInsets())
                     
                     // Subcategory Section
-                    Section(header: Text("More specifically...").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("More specifically...").foregroundColor(themeManager.textColor)) {
                         Menu {
                             ForEach(selectedCategory.subcategories, id: \.self) { subcategory in
                                 Button(action: {
@@ -144,42 +151,42 @@ struct NewMoodEntryView: View {
                         } label: {
                             HStack {
                                 Text(selectedSubcategory.isEmpty ? "Select specific feeling" : selectedSubcategory)
-                                    .foregroundColor(selectedSubcategory.isEmpty ? .gray : Color(hex: "EEEEEE"))
+                                    .foregroundColor(selectedSubcategory.isEmpty ? themeManager.secondaryTextColor : themeManager.textColor)
                                 Spacer()
                                 Image(systemName: "chevron.down")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                             }
                             .padding(.vertical, 8)
                         }
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Intensity Section
-                    Section(header: Text("Intensity (\\(Int(intensity))/5)").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Intensity (\\(Int(intensity))/5)").foregroundColor(themeManager.textColor)) {
                         VStack(spacing: 12) {
                             HStack {
                                 Text("1")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(themeManager.secondaryTextColor)
                                 Slider(value: $intensity, in: 1...5, step: 1)
                                     .accentColor(Color(hex: selectedCategory.color))
                                 Text("5")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(themeManager.secondaryTextColor)
                             }
                             
                             HStack(spacing: 20) {
                                 ForEach(1...5, id: \.self) { level in
                                     Circle()
-                                        .fill(Int(intensity) >= level ? Color(hex: selectedCategory.color) : Color.gray.opacity(0.3))
+                                        .fill(Int(intensity) >= level ? Color(hex: selectedCategory.color) : themeManager.secondaryTextColor.opacity(0.3))
                                         .frame(width: 12, height: 12)
                                 }
                             }
                         }
                         .padding(.vertical, 8)
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     
                     // Triggers Section
-                    Section(header: Text("What triggered this mood?").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("What triggered this mood?").foregroundColor(themeManager.textColor)) {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
                             ForEach(MoodTrigger.allCases, id: \.self) { trigger in
                                 Button(action: {
@@ -191,13 +198,13 @@ struct NewMoodEntryView: View {
                                 }) {
                                     Text(trigger.rawValue)
                                         .font(.caption)
-                                        .foregroundColor(Color(hex: "EEEEEE"))
+                                        .foregroundColor(themeManager.textColor)
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 6)
                                         .background(
                                             selectedTriggers.contains(trigger) ? 
-                                            Color(hex: "836FFF") : 
-                                            Color(hex: "222831")
+                                            themeManager.accentColor : 
+                                            themeManager.secondaryBackgroundColor
                                         )
                                         .cornerRadius(16)
                                 }
@@ -206,10 +213,10 @@ struct NewMoodEntryView: View {
                         }
                         .padding(.vertical, 8)
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     
                     // Location Section
-                    Section(header: Text("Where are you?").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Where are you?").foregroundColor(themeManager.textColor)) {
                         Menu {
                             ForEach(MoodLocation.allCases, id: \.self) { location in
                                 Button(action: {
@@ -221,44 +228,44 @@ struct NewMoodEntryView: View {
                         } label: {
                             HStack {
                                 Text(selectedLocation.rawValue)
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                                 Spacer()
                                 Image(systemName: "chevron.down")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                             }
                             .padding(.vertical, 8)
                         }
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Activities Section
-                    Section(header: Text("What are you doing?").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("What are you doing?").foregroundColor(themeManager.textColor)) {
                         ZStack(alignment: .leading) {
                             if activities.isEmpty {
                                 Text("e.g., Working, exercising, socializing...")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                             }
                             TextField("", text: $activities)
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                         }
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Notes Section
-                    Section(header: Text("Additional notes (optional)").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Additional notes (optional)").foregroundColor(themeManager.textColor)) {
                         ZStack(alignment: .topLeading) {
                             if notes.isEmpty {
                                 Text("How are you feeling? What's on your mind?")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                                     .padding(.top, 8)
                             }
                             TextEditor(text: $notes)
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                                 .frame(minHeight: 80)
                                 .background(Color.clear)
                         }
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Error Message
                     if !errorMessage.isEmpty {
@@ -266,11 +273,11 @@ struct NewMoodEntryView: View {
                             Text(errorMessage)
                                 .foregroundColor(.red)
                         }
-                        .listRowBackground(Color(hex: "31363F"))
+                        .listRowBackground(themeManager.backgroundColor)
                     }
                 }
                 .scrollContentBackground(.hidden)
-                .background(Color(hex: "31363F"))
+                .background(themeManager.backgroundColor)
             }
             .navigationTitle("Log Your Mood")
             .navigationBarTitleDisplayMode(.inline)
@@ -281,7 +288,7 @@ struct NewMoodEntryView: View {
                 trailing: Button("Save") {
                     saveMoodEntry()
                 }
-                .foregroundColor(Color(hex: "836FFF"))
+                .foregroundColor(themeManager.accentColor)
             )
         }
     }

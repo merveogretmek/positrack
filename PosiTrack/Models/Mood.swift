@@ -11,16 +11,16 @@ enum MoodCategory: String, CaseIterable, Codable {
     case tired = "Tired"
     case excited = "Excited"
     
-    var emoji: String {
+    var symbol: String {
         switch self {
-        case .happy: return "😊"
-        case .sad: return "😢"
-        case .anxious: return "😰"
-        case .angry: return "😠"
-        case .calm: return "😌"
-        case .energetic: return "⚡"
-        case .tired: return "😴"
-        case .excited: return "🤩"
+        case .happy: return "sun.max.fill"
+        case .sad: return "cloud.rain.fill"
+        case .anxious: return "tornado"
+        case .angry: return "flame.fill"
+        case .calm: return "leaf.fill"
+        case .energetic: return "bolt.fill"
+        case .tired: return "moon.zzz.fill"
+        case .excited: return "star.fill"
         }
     }
     

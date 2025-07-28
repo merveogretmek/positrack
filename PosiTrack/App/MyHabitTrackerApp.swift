@@ -5,6 +5,7 @@ struct MyHabitTrackerApp: App {
     @StateObject private var habitStore = HabitStore()
     @StateObject private var taskStore = TaskStore()
     @StateObject private var moodStore = MoodStore()
+    @StateObject private var themeManager = ThemeManager()
     
     init() {
         // Set unselected tab icon color to EEEEEE (hex)
@@ -42,6 +43,7 @@ struct MyHabitTrackerApp: App {
                 .environmentObject(habitStore)
                 .environmentObject(taskStore)
                 .environmentObject(moodStore)
+                .environmentObject(themeManager)
         }
     }
 }

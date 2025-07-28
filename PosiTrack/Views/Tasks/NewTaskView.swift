@@ -10,6 +10,7 @@ import SwiftUI
 struct NewTaskView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var taskStore: TaskStore
+    @EnvironmentObject var themeManager: ThemeManager
     
     @State private var title: String = ""
     @State private var description: String = ""
@@ -21,43 +22,43 @@ struct NewTaskView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F").ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 Form {
-                    Section(header: Text("Task Title").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Task Title").foregroundColor(themeManager.textColor)) {
                         ZStack(alignment: .leading) {
                             if title.isEmpty {
                                 Text("Enter task title")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                             }
                             TextField("", text: $title)
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                         }
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
-                    Section(header: Text("Description (Optional)").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Description (Optional)").foregroundColor(themeManager.textColor)) {
                         ZStack(alignment: .leading) {
                             if description.isEmpty {
                                 Text("Enter description")
-                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                    .foregroundColor(themeManager.textColor)
                             }
                             TextField("", text: $description)
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                         }
                     }
-                    .listRowBackground(Color(hex: "222831"))
-                    Section(header: Text("Due Date").foregroundColor(Color(hex: "EEEEEE"))) {
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
+                    Section(header: Text("Due Date").foregroundColor(themeManager.textColor)) {
                         Toggle("Set Due Date", isOn: $setDueDate)
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
+                            .foregroundColor(themeManager.textColor)
                         if setDueDate {
                             DatePicker("Due Date", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                                 .environment(\.colorScheme, .dark)
                         }
                     }
-                    .listRowBackground(Color(hex: "31363F"))
-                    Section(header: Text("Priority").foregroundColor(Color(hex: "EEEEEE"))) {
+                    .listRowBackground(themeManager.backgroundColor)
+                    Section(header: Text("Priority").foregroundColor(themeManager.textColor)) {
                         Picker("Priority", selection: $selectedPriority) {
                             ForEach(TaskPriority.allCases) { priority in
                                 Text(priority.rawValue).tag(priority)
@@ -66,28 +67,28 @@ struct NewTaskView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         .onAppear {
                             let normalAttributes: [NSAttributedString.Key: Any] = [
-                                .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+                                .foregroundColor: UIColor(themeManager.textColor)
                             ]
                             let selectedAttributes: [NSAttributedString.Key: Any] = [
-                                .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+                                .foregroundColor: UIColor(themeManager.textColor)
                             ]
                             UISegmentedControl.appearance().setTitleTextAttributes(normalAttributes, for: .normal)
                             UISegmentedControl.appearance().setTitleTextAttributes(selectedAttributes, for: .selected)
-                            UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(Color(hex: "836FFF"))
+                            UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(themeManager.accentColor)
                         }
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     
                     if !errorMessage.isEmpty {
                         Section {
                             Text(errorMessage)
                                 .foregroundColor(.red)
                         }
-                        .listRowBackground(Color(hex: "31363F"))
+                        .listRowBackground(themeManager.backgroundColor)
                     }
                 }
                 .scrollContentBackground(.hidden)
-                .background(Color(hex: "31363F"))
+                .background(themeManager.backgroundColor)
             }
             .navigationTitle("New Task")
             .navigationBarItems(leading: Button("Cancel") {

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TaskRow: View {
     @EnvironmentObject var taskStore: TaskStore
+    @EnvironmentObject var themeManager: ThemeManager
     var task: Task
     
     var body: some View {
@@ -17,18 +18,18 @@ struct TaskRow: View {
                 toggleCompletion()
             }) {
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(task.isCompleted ? .green : .gray)
+                    .foregroundColor(task.isCompleted ? .green : themeManager.secondaryTextColor)
             }
             VStack(alignment: .leading) {
                 Text(task.title)
                     .fontWeight(task.isCompleted ? .light : .bold)
-                    .strikethrough(task.isCompleted, color: Color(hex: "EEEEEE"))
-                    .foregroundColor(Color(hex: "EEEEEE"))
+                    .strikethrough(task.isCompleted, color: themeManager.textColor)
+                    .foregroundColor(themeManager.textColor)
                 if let dueDate = task.dueDate {
                     let isOverdue = dueDate < Date() && !task.isCompleted
                     Text("Due: \(dueDate, formatter: taskDateFormatter)")
                         .font(.caption)
-                        .foregroundColor(isOverdue ? .red: Color(hex: "EEEEEE"))
+                        .foregroundColor(isOverdue ? .red: themeManager.secondaryTextColor)
                 }
             }
             Spacer()
@@ -40,7 +41,7 @@ struct TaskRow: View {
                 .foregroundColor(.white)
         }
         .padding(.vertical, 4)
-        .background(Color(hex: "31363F"))
+        .background(themeManager.backgroundColor)
     }
     
     func toggleCompletion() {

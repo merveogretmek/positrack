@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct FocusView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     // Timer state variables
     @State private var selectedPreset: FocusPreset = .pomodoro
     @State private var duration: TimeInterval = FocusPreset.pomodoro.duration
@@ -38,7 +39,7 @@ struct FocusView: View {
                     Text("Focus")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(Color(hex: "EEEEEE"))
+                        .foregroundColor(themeManager.textColor)
                     Spacer()
                 }
                 .padding(.horizontal)
@@ -49,7 +50,7 @@ struct FocusView: View {
                 // Timer Display
                 ZStack {
                     Circle()
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 20)
+                        .stroke(themeManager.secondaryTextColor.opacity(0.3), lineWidth: 20)
                         .frame(width: 200, height: 200)
                     Circle()
                         .trim(from: 0, to: CGFloat(remainingTime / duration))
@@ -62,7 +63,7 @@ struct FocusView: View {
                         .animation(.linear, value: remainingTime)
                     Text(timeString(time: remainingTime))
                         .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .foregroundColor(Color(hex: "EEEEEE"))
+                        .foregroundColor(themeManager.textColor)
                 }
 
                 // Activity Selection Button
@@ -71,7 +72,7 @@ struct FocusView: View {
                 }) {
                     Text(selectedPreset.rawValue)
                         .font(.title2)
-                        .foregroundColor(Color(hex: "EEEEEE"))
+                        .foregroundColor(themeManager.textColor)
                 }
 
                 // Controls: Start / Pause / Stop Buttons
@@ -79,26 +80,26 @@ struct FocusView: View {
                     if !isRunning && remainingTime < duration {
                         Button(action: startTimer) {
                             Label("Resume", systemImage: "play.fill")
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                         }
                     } else if !isRunning {
                         Button(action: startTimer) {
                             Label("Start", systemImage: "play.fill")
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                         }
                     } else {
                         Button(action: pauseTimer) {
                             Label("Pause", systemImage: "pause.fill")
-                                .foregroundColor(Color(hex: "EEEEEE"))
+                                .foregroundColor(themeManager.textColor)
                         }
                     }
                     Button(action: stopTimer) {
                         Label("Stop", systemImage: "stop.fill")
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .foregroundColor(themeManager.textColor)
                     }
                 }
                 .font(.title2)
-                .foregroundColor(Color(hex: "836FFF"))
+                .foregroundColor(themeManager.accentColor)
 
                 // Session Type Selector (Preset Picker)
                 Picker("Session Type", selection: $selectedPreset) {
@@ -109,10 +110,10 @@ struct FocusView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
                 .onAppear {
-                    let purpleColor = UIColor(Color(hex: "836FFF"))
+                    let purpleColor = UIColor(themeManager.accentColor)
                     UISegmentedControl.appearance().selectedSegmentTintColor = purpleColor
 
-                    let textAttributes = [NSAttributedString.Key.foregroundColor: UIColor(Color(hex: "EEEEEE"))]
+                    let textAttributes = [NSAttributedString.Key.foregroundColor: UIColor(themeManager.textColor)]
                     UISegmentedControl.appearance().setTitleTextAttributes(textAttributes, for: .normal)
                     UISegmentedControl.appearance().setTitleTextAttributes(textAttributes, for: .selected)
                 }
@@ -135,7 +136,7 @@ struct FocusView: View {
                 if showCustomInput && selectedPreset == .custom {
                     HStack(spacing: 8) {
                         Text("Minutes:")
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .foregroundColor(themeManager.textColor)
                         TextField("e.g., 30", text: $customMinutesInput)
                             .keyboardType(.numberPad)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -149,7 +150,7 @@ struct FocusView: View {
                                 showCustomInput = false
                             }
                         }
-                        .foregroundColor(Color(hex: "836FFF"))
+                        .foregroundColor(themeManager.accentColor)
                     }
                     .padding(.horizontal)
                 }
@@ -158,17 +159,17 @@ struct FocusView: View {
                 HStack {
                     HStack(spacing: 8) {
                         Image(systemName: "speaker.wave.2.fill")
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .foregroundColor(themeManager.textColor)
                         Toggle("", isOn: $backgroundNoiseOn)
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                            .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
                             .labelsHidden()
                     }
                     .frame(maxWidth: .infinity)
                     HStack(spacing: 8) {
                         Image(systemName: "moon.zzz.fill")
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .foregroundColor(themeManager.textColor)
                         Toggle("", isOn: $dndOn)
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
+                            .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
                             .labelsHidden()
                     }
                     .frame(maxWidth: .infinity)
@@ -178,7 +179,7 @@ struct FocusView: View {
 
                 Spacer()
             }
-            .background(Color(hex: "31363F").ignoresSafeArea())
+            .background(themeManager.backgroundColor.ignoresSafeArea())
             .navigationBarHidden(true)
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
@@ -243,8 +244,8 @@ struct FocusView: View {
     func gradientForTimer() -> AngularGradient {
         let progress = remainingTime / duration
         let colors: [Color] = progress > 0.5 ?
-            [Color(hex: "9B59B6"), Color(hex: "836FFF")] :
-            [Color(hex: "836FFF"), Color(hex: "8E44AD")]
+            [Color(hex: "9B59B6"), themeManager.accentColor] :
+            [themeManager.accentColor, Color(hex: "8E44AD")]
         return AngularGradient(gradient: Gradient(colors: colors), center: .center)
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HabitsView: View {
     @EnvironmentObject var habitStore: HabitStore
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var selectedDate: Date = Date()
     @State private var showNewHabitSheet: Bool = false
 
@@ -24,7 +25,7 @@ struct HabitsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F")
+                themeManager.backgroundColor
                     .ignoresSafeArea()
 
                 VStack {
@@ -32,7 +33,7 @@ struct HabitsView: View {
                     Text(Formatter.displayDate.string(from: selectedDate))
                         .font(.custom("Varela Round", size: 34))
                         .padding(.top)
-                        .foregroundColor(Color(hex: "EEEEEE"))
+                        .foregroundColor(themeManager.textColor)
                     
                     // Horizontal scroll of dates.
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -45,14 +46,14 @@ struct HabitsView: View {
                                         .fontWeight(.semibold)
                                         .foregroundColor(
                                             isSameDay(date, selectedDate)
-                                                ? Color(hex: "EEEEEE")
+                                                ? themeManager.textColor
                                                 : .primary
                                         )
                                         .background(
                                             Circle()
                                                 .fill(
                                                     isSameDay(date, selectedDate)
-                                                        ? Color(hex: "836FFF")
+                                                        ? themeManager.accentColor
                                                         : Color.clear
                                                 )
                                         )
@@ -97,7 +98,7 @@ struct HabitsView: View {
                                 }
                             }
                         }
-                        .background(Color(hex: "31363F"))
+                        .background(themeManager.backgroundColor)
                     }
                 }
             }
@@ -112,6 +113,7 @@ struct HabitsView: View {
         }
         .sheet(isPresented: $showNewHabitSheet) {
             NewHabitView(startDate: selectedDate)
+                .environmentObject(themeManager)
         }
     }
     

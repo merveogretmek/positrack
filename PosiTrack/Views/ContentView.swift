@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    
     var body: some View {
         TabView {
             // Habits tab
@@ -41,7 +43,8 @@ struct ContentView: View {
                     Text("Settings")
                 }
         }
-        .accentColor(Color(hex: "836FFF"))
+        .accentColor(themeManager.accentColor)
+        .background(themeManager.backgroundColor)
     }
 }
 
@@ -51,5 +54,6 @@ struct ContentView_Previews: PreviewProvider {
             .environmentObject(HabitStore())
             .environmentObject(TaskStore())
             .environmentObject(MoodStore())
+            .environmentObject(ThemeManager())
     }
 }
