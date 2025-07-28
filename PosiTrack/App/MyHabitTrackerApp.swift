@@ -4,6 +4,7 @@ import SwiftUI
 struct MyHabitTrackerApp: App {
     @StateObject private var habitStore = HabitStore()
     @StateObject private var taskStore = TaskStore()
+    @StateObject private var moodStore = MoodStore()
     
     init() {
         // Set unselected tab icon color to EEEEEE (hex)
@@ -40,6 +41,7 @@ struct MyHabitTrackerApp: App {
             ContentView()
                 .environmentObject(habitStore)
                 .environmentObject(taskStore)
+                .environmentObject(moodStore)
         }
     }
 }

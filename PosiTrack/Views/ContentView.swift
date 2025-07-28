@@ -50,5 +50,6 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
             .environmentObject(HabitStore())
             .environmentObject(TaskStore())
+            .environmentObject(MoodStore())
     }
 }
