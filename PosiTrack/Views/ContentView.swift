@@ -44,7 +44,7 @@ struct ContentView: View {
                 }
         }
         .accentColor(themeManager.accentColor)
-        .background(themeManager.backgroundColor)
+        .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
     }
 }
 

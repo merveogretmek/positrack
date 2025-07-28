@@ -111,6 +111,7 @@ struct HabitsView: View {
                 }
             )
         }
+        .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         .sheet(isPresented: $showNewHabitSheet) {
             NewHabitView(startDate: selectedDate)
                 .environmentObject(themeManager)

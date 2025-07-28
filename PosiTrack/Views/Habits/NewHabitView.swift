@@ -3,6 +3,7 @@ import SwiftUI
 struct NewHabitView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var habitStore: HabitStore
+    @EnvironmentObject var themeManager: ThemeManager
     var startDate: Date
 
     @State private var habitName: String = ""
@@ -18,30 +19,30 @@ struct NewHabitView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "31363F")
+                themeManager.backgroundColor
                     .ignoresSafeArea()
 
                 Form {
                     // Habit Name Section
-                    Section(header: Text("Habit Name").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Habit Name").foregroundColor(themeManager.textColor)) {
                         CustomTextField(placeholder: "e.g., Drink water", text: $habitName)
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Goal Section
-                    Section(header: Text("Goal").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Goal").foregroundColor(themeManager.textColor)) {
                         CustomTextField(placeholder: "Enter an amount", text: $goal)
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Unit Section
-                    Section(header: Text("Unit").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Unit").foregroundColor(themeManager.textColor)) {
                         CustomTextField(placeholder: "e.g., Hours, dollars, miles/kms", text: $unit)
                     }
-                    .listRowBackground(Color(hex: "222831"))
+                    .listRowBackground(themeManager.secondaryBackgroundColor)
                     
                     // Frequency Section
-                    Section(header: Text("Frequency").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Frequency").foregroundColor(themeManager.textColor)) {
                         Picker("Frequency", selection: $frequencySelection) {
                             Text("Daily").tag(0)
                             Text("Weekly").tag(1)
@@ -50,42 +51,42 @@ struct NewHabitView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         .onAppear {
                             let normalAttributes: [NSAttributedString.Key: Any] = [
-                                .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+                                .foregroundColor: UIColor(themeManager.textColor)
                             ]
                             let selectedAttributes: [NSAttributedString.Key: Any] = [
-                                .foregroundColor: UIColor(Color(hex: "EEEEEE"))
+                                .foregroundColor: UIColor(themeManager.textColor)
                             ]
                             UISegmentedControl.appearance().setTitleTextAttributes(normalAttributes, for: .normal)
                             UISegmentedControl.appearance().setTitleTextAttributes(selectedAttributes, for: .selected)
-                            UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(Color(hex: "836FFF"))
+                            UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(themeManager.accentColor)
                         }
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     
                     // Show custom frequency input if Custom is selected.
                     if frequencySelection == 2 {
-                        Section(header: Text("Custom Frequency (days)").foregroundColor(Color(hex: "EEEEEE"))) {
+                        Section(header: Text("Custom Frequency (days)").foregroundColor(themeManager.textColor)) {
                             CustomTextField(placeholder: "e.g., 3", text: $customFrequencyDays)
                         }
-                        .listRowBackground(Color(hex: "222831"))
+                        .listRowBackground(themeManager.secondaryBackgroundColor)
                     }
                     
                     // Schedule Section
-                    Section(header: Text("Schedule").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Schedule").foregroundColor(themeManager.textColor)) {
                         DatePicker(selection: $timePreference, displayedComponents: .hourAndMinute) {
-                            Text("Select Time").foregroundColor(Color(hex: "EEEEEE"))
+                            Text("Select Time").foregroundColor(themeManager.textColor)
                         }
                         .environment(\.colorScheme, .dark)
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     
                     // Reminders Section
-                    Section(header: Text("Reminders").foregroundColor(Color(hex: "EEEEEE"))) {
+                    Section(header: Text("Reminders").foregroundColor(themeManager.textColor)) {
                         Toggle("Enable Reminders", isOn: $remindersOn)
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "836FFF")))
-                            .foregroundColor(Color(hex: "EEEEEE"))
+                            .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
+                            .foregroundColor(themeManager.textColor)
                     }
-                    .listRowBackground(Color(hex: "31363F"))
+                    .listRowBackground(themeManager.backgroundColor)
                     
                     // Error Message Section
                     if !errorMessage.isEmpty {
@@ -93,7 +94,7 @@ struct NewHabitView: View {
                             Text(errorMessage)
                                 .foregroundColor(.red)
                         }
-                        .listRowBackground(Color(hex: "31363F"))
+                        .listRowBackground(themeManager.backgroundColor)
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -157,6 +158,7 @@ struct NewHabitView: View {
                     Text("Save")
                 })
             )
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
     }
 }

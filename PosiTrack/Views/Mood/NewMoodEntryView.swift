@@ -290,6 +290,7 @@ struct NewMoodEntryView: View {
                 }
                 .foregroundColor(themeManager.accentColor)
             )
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
     }
     

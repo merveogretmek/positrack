@@ -52,6 +52,7 @@ struct SettingsView: View {
                 .background(themeManager.backgroundColor)
             }
             .navigationTitle("Settings")
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
         .sheet(isPresented: $showingAnalytics) {
             AnalyticsView()

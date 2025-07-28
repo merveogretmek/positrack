@@ -201,6 +201,7 @@ struct FocusView: View {
                 )
             }
         }
+        .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
     }
 
     // MARK: Timer Methods

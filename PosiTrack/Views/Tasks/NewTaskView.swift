@@ -96,6 +96,7 @@ struct NewTaskView: View {
             }, trailing: Button("Save") {
                 saveTask()
             })
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
     }
         

@@ -120,6 +120,8 @@ struct TasksView: View {
                     }
                 }
                 .navigationTitle("Tasks")
+                .navigationBarTitleDisplayMode(.large)
+                .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: {

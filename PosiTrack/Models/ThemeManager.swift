@@ -42,7 +42,9 @@ class ThemeManager: ObservableObject {
     @Published var currentTheme: AppTheme {
         didSet {
             UserDefaults.standard.set(currentTheme.rawValue, forKey: "selectedTheme")
-            updateSystemTheme()
+            DispatchQueue.main.async {
+                self.updateSystemTheme()
+            }
         }
     }
     
@@ -53,8 +55,7 @@ class ThemeManager: ObservableObject {
     }
     
     private func updateSystemTheme() {
-        // This will be used for future system integration
-        // For now, we'll handle theme colors manually in views
+        // Simple theme update - views will handle their own appearance
     }
     
     // MARK: - Color Getters

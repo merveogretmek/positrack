@@ -35,6 +35,7 @@ struct MoodView: View {
                 }
             }
             .navigationTitle("Mood")
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
