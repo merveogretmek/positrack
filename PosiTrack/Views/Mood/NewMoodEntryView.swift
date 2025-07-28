@@ -20,44 +20,116 @@ struct NewMoodEntryView: View {
                 
                 Form {
                     // Mood Category Section
-                    Section(header: Text("How are you feeling?").foregroundColor(Color(hex: "EEEEEE"))) {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                            ForEach(MoodCategory.allCases, id: \.self) { category in
-                                Button(action: {
-                                    selectedCategory = category
-                                    selectedSubcategory = category.subcategories.first ?? ""
-                                }) {
-                                    VStack(spacing: 8) {
-                                        Text(category.emoji)
-                                            .font(.system(size: 32))
-                                        Text(category.rawValue)
-                                            .font(.caption)
-                                            .foregroundColor(Color(hex: "EEEEEE"))
+                    Section {
+                        VStack(spacing: 20) {
+                            // Header with animated moon icon
+                            HStack {
+                                Image(systemName: "moon.stars.fill")
+                                    .foregroundColor(Color(hex: "836FFF"))
+                                    .font(.title2)
+                                
+                                Text("How are you feeling right now?")
+                                    .font(.title3)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                
+                                Spacer()
+                            }
+                            .padding(.top, 8)
+                            
+                            // Mood wheel-style circular layout
+                            ZStack {
+                                // Background circle
+                                Circle()
+                                    .stroke(Color(hex: "222831"), lineWidth: 2)
+                                    .frame(width: 280, height: 280)
+                                
+                                // Mood options arranged in circle
+                                ForEach(Array(MoodCategory.allCases.enumerated()), id: \.element) { index, category in
+                                    let angle = Double(index) * (360.0 / Double(MoodCategory.allCases.count))
+                                    let radians = angle * .pi / 180
+                                    let radius: CGFloat = 110
+                                    
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                            selectedCategory = category
+                                            selectedSubcategory = category.subcategories.first ?? ""
+                                        }
+                                    }) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(
+                                                    selectedCategory == category ? 
+                                                    Color(hex: category.color).opacity(0.8) : 
+                                                    Color(hex: "222831")
+                                                )
+                                                .frame(width: selectedCategory == category ? 60 : 50, height: selectedCategory == category ? 60 : 50)
+                                                .shadow(
+                                                    color: selectedCategory == category ? Color(hex: category.color).opacity(0.5) : Color.clear,
+                                                    radius: selectedCategory == category ? 8 : 0
+                                                )
+                                            
+                                            VStack(spacing: 2) {
+                                                Text(category.emoji)
+                                                    .font(.system(size: selectedCategory == category ? 24 : 20))
+                                                
+                                                Text(category.rawValue)
+                                                    .font(.system(size: selectedCategory == category ? 8 : 7))
+                                                    .fontWeight(selectedCategory == category ? .semibold : .regular)
+                                                    .foregroundColor(Color(hex: "EEEEEE"))
+                                            }
+                                        }
+                                        .scaleEffect(selectedCategory == category ? 1.1 : 1.0)
                                     }
-                                    .frame(height: 70)
-                                    .frame(maxWidth: .infinity)
-                                    .background(
-                                        selectedCategory == category ? 
-                                        Color(hex: category.color).opacity(0.3) : 
-                                        Color(hex: "222831")
-                                    )
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(
-                                                selectedCategory == category ? 
-                                                Color(hex: category.color) : 
-                                                Color.clear, 
-                                                lineWidth: 2
-                                            )
+                                    .buttonStyle(PlainButtonStyle())
+                                    .offset(
+                                        x: cos(radians) * radius,
+                                        y: sin(radians) * radius
                                     )
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                
+                                // Center indicator
+                                if selectedCategory != .happy || !selectedSubcategory.isEmpty {
+                                    Circle()
+                                        .fill(Color(hex: "836FFF"))
+                                        .frame(width: 8, height: 8)
+                                        .scaleEffect(1.5)
+                                        .opacity(0.8)
+                                }
+                            }
+                            .frame(height: 300)
+                            
+                            // Selected mood display
+                            if selectedCategory != .happy || !selectedSubcategory.isEmpty {
+                                HStack(spacing: 12) {
+                                    Text(selectedCategory.emoji)
+                                        .font(.title)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Feeling \(selectedCategory.rawValue.lowercased())")
+                                            .font(.headline)
+                                            .foregroundColor(Color(hex: "EEEEEE"))
+                                        
+                                        Text("Tap to explore deeper feelings")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color(hex: selectedCategory.color).opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(hex: selectedCategory.color).opacity(0.3), lineWidth: 1)
+                                )
+                                .cornerRadius(12)
                             }
                         }
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 12)
                     }
                     .listRowBackground(Color(hex: "31363F"))
+                    .listRowInsets(EdgeInsets())
                     
                     // Subcategory Section
                     Section(header: Text("More specifically...").foregroundColor(Color(hex: "EEEEEE"))) {
